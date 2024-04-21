@@ -1,0 +1,5 @@
+build
+.xmake
+bin
+include
+lib

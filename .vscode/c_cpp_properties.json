@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/include/**",
+                "D:\\ProgramData\\Qt6\\6.7.0\\msvc2019_64\\include\\**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "QT_CREATOR"
+            ],
+            "compilerPath": "D:\\Program Files\\mingw-w64\\x86_64-8.1.0\\bin\\gcc.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-gcc-x64"
+        }
+    ],
+    "version": 4
+}

@@ -1,0 +1,62 @@
+#ifndef PREVIEWPROJECT_H
+#define PREVIEWPROJECT_H
+
+#include <QSet>
+#include <QList>
+#include <QObject>
+#include <QLocale>
+
+#include "common/defines.h"
+#include "common/singleton.hpp"
+
+namespace ProjectExplorer 
+{
+
+class Project : public QObject, public Singleton<Project>{
+    Q_OBJECT
+public:
+    struct PROJECT_SETTING_S
+    {
+        QString strName;  // 项目名
+        QString strVersion; // 版本
+        QString strFocusLocalQml; // 在线预览的入口 qml 文件本地路径
+        QString strFocusQrcQml; // 在线预览的入口 qml 文件 qrc 路径，qml engine 能识别的路径
+        QString strPojectFolder; // 项目文件夹
+        QString strLimitedFolder; // 只在指定的文件夹下查找需要的资源
+        QString strTargetWorkFolder; // 目标程序工作目录
+        QSet<QString> setQrcFile; // qrc 文件路径
+        QSet<QString> setExtendSearchFolder; // 其他额外存在资源的文件夹
+        QLocale language; 
+    };
+    
+
+public:
+    Project(QObject * p = nullptr) : QObject(p){}
+
+    FUNC_GET(QString, m_setting.strName, Name);
+    FUNC_GET(QString, m_setting.strVersion, Version);
+    FUNC_SET_GET(QLocale, m_setting.language, Language);
+    FUNC_SET_GET(QString, m_setting.strFocusLocalQml, FocusLocalQml);
+    FUNC_SET_GET(QString, m_setting.strFocusQrcQml, FocusQrcQml);
+    FUNC_SET_GET(QString, m_setting.strPojectFolder, ProjectFolder);
+    FUNC_SET_GET(QString, m_setting.strLimitedFolder, LimitedFolder);
+    FUNC_SET_GET(QString, m_setting.strTargetWorkFolder, TargetWorkFolder);
+    FUNC_GET(QSet<QString>, m_setting.setQrcFile, QrcFiles);
+    FUNC_GET(QSet<QString>, m_setting.setExtendSearchFolder, ExtendSearchFolder);
+
+    void appendQrcFile(const QString & strPath);
+    void appendExtendSearchFolder(const QString & strPath);
+
+    /* 解析命令行 */
+    bool parserCommand(int argc, char *argv[]);
+
+
+private:
+    PROJECT_SETTING_S m_setting;
+};
+   
+} // namespace ProjectExplorer
+
+
+
+#endif /* PREVIEWPROJECT_H */
