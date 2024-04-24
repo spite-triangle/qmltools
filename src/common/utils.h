@@ -18,6 +18,7 @@ namespace OwO
     extern std::string QStringToGbk(const QString & str);
     extern QString Utf8ToQString(const std::string & str);
     extern QString GbkToQString(const std::string & str);
+    extern QString ToQString(const std::string & str);
 } // namespace OwO
 
 

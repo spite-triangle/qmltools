@@ -19,4 +19,12 @@ namespace OwO
         return QString::fromLocal8Bit(str.c_str());
     }
 
+    extern QString ToQString(const std::string & str){
+#ifdef __linux__
+        return QString::fromLatin1(str.c_str());
+#else
+        return QString::fromLocal8Bit(str.c_str());
+#endif
+    }
+
 } // namespace OwO

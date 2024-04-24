@@ -143,19 +143,20 @@ class argparser
         std::cout << "usage: " << program_name << " [options]";
         for (const auto &named_arg : named_arguments)
         {
-            std::cout << " [=" << named_arg.name << "]";
+            std::cout << " [" << named_arg.name << "]";
         }
         for (const auto &arg : arguments)
         {
             std::cout << " [" << arg.name << "]";
         }
         std::cout << std::endl;
+
     }
 
     void print_help() const
     {
         print_usage();
-        std::cout << "\n" << description << "\n\n";
+        std::cout <<  description << "\n";
         std::cout << "Options:\n";
         // calculate the longest option name
         std::size_t max_name_length = 0;
@@ -187,6 +188,9 @@ class argparser
             {
                 std::cout << opt.short_name << ", ";
                 printed_length = 4;
+            }else{
+                std::cout << "    ";
+                printed_length = 4;
             }
             std::cout << opt.long_name;
             printed_length += opt.long_name.length();
@@ -201,14 +205,17 @@ class argparser
             {
                 std::cout << opt.short_name << ", ";
                 printed_length = 4;
+            }else{
+                std::cout << "    ";
+                printed_length = 4;
             }
             std::cout << opt.long_name;
             printed_length += opt.long_name.length();
             std::cout << std::string(max_name_length - printed_length, ' ');
-            if (opt.type != "bool")
-            {
-                std::cout << "(" << opt.type << ") ";
-            }
+            // if (opt.type != "bool")
+            // {
+            //     std::cout << "(" << opt.type << ") ";
+            // }
             std::cout << replace(opt.help, "\n", "\n" + std::string(max_name_length + 2, ' ')) << '\n';
         }
         if (!named_arguments.empty())
@@ -224,7 +231,7 @@ class argparser
             {
                 std::cout << "  ";
                 std::cout << arg.name;
-                std::cout << std::string(max_name_length - arg.name.length(), ' ') << "(" << arg.type << ") ";
+                std::cout << std::string(max_name_length - arg.name.length(), ' ') /* << "(" << arg.type << ") " */;
                 std::cout << replace(arg.help, "\n", "\n" + std::string(max_name_length + 2, ' ')) << '\n';
             }
         }
@@ -241,7 +248,7 @@ class argparser
             {
                 std::cout << "  ";
                 std::cout << arg.name;
-                std::cout << std::string(max_name_length - arg.name.length(), ' ') << "(" << arg.type << ") ";
+                std::cout << std::string(max_name_length - arg.name.length(), ' ') /* << "(" << arg.type << ") " */;
                 std::cout << replace(arg.help, "\n", "\n" + std::string(max_name_length + 2, ' ')) << '\n';
             }
         }
@@ -373,7 +380,7 @@ class argparser
     std::string get_argument_string(const std::string &name) const { return get_argument<std::string>(name); }
 
     // parse arguments
-    argparser &parse(int argc, char const *argv[])
+    argparser &parse(int argc, char *argv[])
     {
         // if not set program name, use argv[0]
         if (program_name.empty())
@@ -383,6 +390,7 @@ class argparser
         if (argc == 1 && (!arguments.empty() || !named_arguments.empty()))
         {
             print_usage();
+            std::cout << "help:  "<< program_name << " -?,--help"<< std::endl;
             std::exit(0);
         }
         std::vector<std::string> tokens;

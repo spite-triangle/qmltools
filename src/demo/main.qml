@@ -1,15 +1,14 @@
 import QtQuick 2.6
 import QtQuick.Controls 2.2
 import QtQuick.Window 2.2
-import "./test1.js" as Ts
+import "./test.js" as Ts
 
 Window {
     id: root
     visible: true
     width: 640
     height: 480
-    title: qsTr("Hello 2 1 World")
-
+    title: qsTr("Hello 120 World")
 
     Row{
         Text{
@@ -24,9 +23,9 @@ Window {
         }
 
         Rectangle{
-            width: 100
+            width: 120
             height: 200
-            color: "red"
+            color: "blue"
         }
 
         Button {

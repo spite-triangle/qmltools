@@ -89,7 +89,9 @@
         "qdatastream": "cpp",
         "qapplication": "cpp",
         "qfilesystemwatcher": "cpp",
-        "csignal": "cpp"
+        "csignal": "cpp",
+        "qcoreapplication": "cpp",
+        "qprocess": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "qt.installPath": "D:/ProgramData/Qt6"

@@ -63,6 +63,7 @@
     })
     // 
 
-
+#define BLOCK \
+    for(bool __i=false ; __i != true; __i = true)
 
 #endif /* DEFINES_H */
