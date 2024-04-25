@@ -67,7 +67,7 @@ void PreviewClient::messageReceived(const QByteArray &data)
     {
         QString path;
         packet >> path;
-        emit sigPathRequested(path, false);
+        emit sigPathRequested(path);
         break;
     }
     case Error:

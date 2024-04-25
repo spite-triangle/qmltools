@@ -6,6 +6,7 @@
 
 #include "common/utils.h"
 #include "common/argparse.hpp"
+#include "previewProject.h"
 
 void ProjectExplorer::Project::appendQrcFile(const QString &strPath)
 {
@@ -31,8 +32,9 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
         .add_sc_option("", "--version", "show version info", [&]() {
             std::cout << "version " << OwO::QStringToUtf8(m_setting.strVersion) << std::endl;
         })
-        .add_option("-v", "--verbose", "Print more debug information.")
+        .add_option("-v", "--verbose", "Print more debug information to `log/run.log`.")
         .add_option<std::string>("-l","--language","Configure language QLocale.","")
+        .add_option<int64_t>("-i","--interval","Interval (ms) to update file change.", 2000)
         .add_option<std::string>("-t","--target", "File path. The target program to be started and previewed.","")
         .add_option<std::string>("","--cwd","The workspace folder of target program.","")
         .add_option<std::string>("-h","--host", "The host of QML debug server.","127.0.0.1")
@@ -46,6 +48,19 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
         .parse(argc, argv);
 
     QDir root(m_setting.strRunFolder);
+
+    if(args.has_option("--verbose")){
+        logFolder();
+        m_setting.bLog = true;
+    }
+
+    {
+        int64_t nInterval = args.get_option_int64("--interval");
+        if(nInterval <= 0){
+            m_setting.uUpdateInterval = 2000;
+        }
+        m_setting.uUpdateInterval = nInterval;
+    }
 
     if(args.get_option_string("--language").empty() == false){
         m_setting.language = QLocale(OwO::ToQString(args.get_option_string("--language")));
@@ -118,5 +133,12 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
         }
         m_setting.strPojectFolder = root.absoluteFilePath(strFolder);
     }
+    return true;
+}
+
+bool ProjectExplorer::Project::logFolder()
+{
+    QDir root(QCoreApplication::applicationDirPath());
+    root.mkdir("log");
     return true;
 }

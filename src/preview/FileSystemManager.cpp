@@ -54,7 +54,7 @@ namespace OxO
 FileSystemManger::FileSystemManger(QObject *parent)
     :QObject(parent)
 {
-
+    m_timer = new QTimer(this);
 }
 
 bool FileSystemManger::init()
@@ -90,15 +90,22 @@ bool FileSystemManger::init()
         m_watcher.addFile(qrcFile, FileSystemWatcher::WatchModifiedDate);
     }
 
-    /* 更新主 qml 路径 */    
-    auto qrcUrl = findQrcUrlByParser(project->getFocusLocalQml());
-    project->setFocusQrcQml(qrcUrl);
-
+    updateFocusQml();
     return true;
 }
 
+void FileSystemManger::updateFocusQml()
+{
+    auto project = Project::Instance();
 
-void FileSystemManger::onPathRequested(const QString & strPath, const bool & bReload) {
+    /* 更新主 qml 路径 */    
+    if(project->getFocusLocalQml().isEmpty() == false){
+        auto qrcUrl = findQrcUrlByParser(project->getFocusLocalQml());
+        project->setFocusQrcQml(qrcUrl);
+    }
+}
+
+void FileSystemManger::onPathRequested(const QString & strPath) {
     auto project = Project::Instance();
 
     auto fileHandler = [&](const Utils::FilePath &filePath, int confidence){
@@ -122,7 +129,6 @@ void FileSystemManger::onPathRequested(const QString & strPath, const bool & bRe
         } 
 
         emit sigAnnounceFile(strPath, contents);
-        if(bReload == true) emit sigLoadUrl(project->getFocusQrcQml());
     };
 
     auto directoryHandler = [&](const QStringList &entries, int confidence){
@@ -167,11 +173,27 @@ QByteArray FileSystemManger::loadFile(const QString &strPath, bool &bRes)
 
 void FileSystemManger::onFileChanged(const QString &strPath)
 {
+    // Project::Instance()->getUpdateInterval() 大于时间间隔才刷新
+    if(m_mapFileModifyTime.contains(strPath) == true){
+        auto & last = m_mapFileModifyTime[strPath];
+        auto  now = QFileInfo(strPath).fileTime(QFile::FileModificationTime);
+
+        if(last.msecsTo(now) > Project::Instance()->getUpdateInterval()){
+            m_mapFileModifyTime[strPath] = now;
+        }else{
+            return;
+        }
+    }else{
+        m_mapFileModifyTime[strPath] = QFileInfo(strPath).fileTime(QFile::FileModificationTime);
+    }
+
+
     bool bFlag = false;
     QByteArray contents = loadFile(strPath, bFlag);
     if(bFlag == false){
         CONSOLE_ERROR("failed to load file : %s", strPath.toStdString().c_str());
         m_watcher.removeFile(strPath);
+        m_mapFileModifyTime.remove(strPath);
         return;
     }
 
@@ -182,15 +204,14 @@ void FileSystemManger::onFileChanged(const QString &strPath)
     // 检测文件有效性
     if(checkFileValid(strPath, contents, enType) == false) return;
 
-
     // 查找 strpath 对应的 qrc 路径
     QString strQrcUrl = findQrcUrlByParser(strPath);
-
     if(strQrcUrl.isEmpty() == true){
         emit sigClearCache();
+    }else{
+        emit sigAnnounceFile(strQrcUrl, contents);
     }
 
-    emit sigAnnounceFile(strQrcUrl, contents);
     emit sigLoadUrl(Project::Instance()->getFocusQrcQml());
 }
 

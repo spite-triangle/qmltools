@@ -60,8 +60,8 @@ bool PreviewTool::init() {
         LOG_DEBUG("success to connect");
 
         // 激活需要预览的 qml 文件
-        auto projet = ProjectExplorer::Project::Instance();
-        m_connectManager->onLoadUrl(projet->getFocusQrcQml());
+        auto project = ProjectExplorer::Project::Instance();
+        m_connectManager->onLoadUrl(project->getFocusQrcQml());
     });
     ASSERT_RETURN(bFlag == true, "failed to connect connectionOpened", false);
 

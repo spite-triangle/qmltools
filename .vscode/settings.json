@@ -91,7 +91,9 @@
         "qfilesystemwatcher": "cpp",
         "csignal": "cpp",
         "qcoreapplication": "cpp",
-        "qprocess": "cpp"
+        "qprocess": "cpp",
+        "hash_map": "cpp",
+        "qhash": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "qt.installPath": "D:/ProgramData/Qt6"

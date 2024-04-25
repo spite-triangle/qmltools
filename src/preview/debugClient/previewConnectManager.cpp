@@ -115,7 +115,7 @@ void PreviewConnectManager::onErrorMessage(const QString & strMsgText)
     }
 
     if(url.isEmpty() == false){
-        emit sigPathRequested(url, true);
+        emit sigPathRequested(url);
     }
 
     CONSOLE_ERROR("%s", OwO::QStringToUtf8(strMsgText.simplified()).c_str());

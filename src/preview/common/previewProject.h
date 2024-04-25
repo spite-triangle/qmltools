@@ -29,10 +29,11 @@ public:
         QString strSocketFile;
         QString strHost;
         size_t  uport;
+        size_t  uUpdateInterval;
         QSet<QString> setQrcFile; // qrc 文件路径
         QSet<QString> setExtendSearchFolder; // 其他额外存在资源的文件夹
         QLocale language; 
-        bool bShowDebug;
+        bool bLog = false;
     };
     
 
@@ -52,7 +53,8 @@ public:
     FUNC_SET_GET(QString, m_setting.strSocketFile, SocketFile);
     FUNC_SET_GET(QString, m_setting.strHost, Host);
     FUNC_SET_GET(size_t, m_setting.uport, Port);
-    FUNC_SET_GET(bool, m_setting.bShowDebug, ShowDebugInfo);
+    FUNC_SET_GET(size_t, m_setting.uUpdateInterval, UpdateInterval);
+    FUNC_SET_GET(bool, m_setting.bLog, ExportLog);
     FUNC_GET(QSet<QString>, m_setting.setQrcFile, QrcFiles);
     FUNC_GET(QSet<QString>, m_setting.setExtendSearchFolder, ExtendSearchFolder);
 
@@ -61,6 +63,9 @@ public:
 
     /* 解析命令行 */
     bool parserCommand(int argc, char *argv[]);
+
+    /* 日志文件夹 */
+    bool logFolder();
 
 
 private:

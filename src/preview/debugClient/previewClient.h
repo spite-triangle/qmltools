@@ -56,7 +56,7 @@ public:
 
 signals:
     void sigDebugServiceUnavailable(const QString & name);
-    void sigPathRequested(const QString & path, const bool & bReload);
+    void sigPathRequested(const QString & path);
     void sigErrorMessage(const QString & msg);
     void sigFpsInfo(const FPS_INFO_S & stInfo);
 };

@@ -1,13 +1,17 @@
 #include "test/testMain.hpp"
 
+#include <QDir>
 #include <QTimer>
 #include <QProcess>
 #include <QCoreApplication>
 
 #include "previewTool.h"
+#include "common/utils.h"
+#include "common/log.hpp"
 #include "common/previewProject.h"
 #include "debugClient/previewConnectManager.h"
 
+// xmake r preview --qrc "E:\workspace\qt_servitor\tools\src\demo\main.qrc" --target "E:\workspace\qt_servitor\tools\bin\demo\demo.exe" -s "C:/Windows/Temp/preview_test/preview.socket" project="E:\workspace\qt_servitor\tools\src\demo" focus="E:\workspace\qt_servitor\tools\src\demo\main.qml"
 
 int main(int argc, char *argv[])
 {
@@ -24,6 +28,10 @@ int main(int argc, char *argv[])
     TestMain(argc, argv);
 #endif
 
+    // 初始化日志
+    OwO::Logger::Instance()->init( OwO::ToStdString(project->getRunFolder() + "/log/run.log"), project->getExportLog());
+
+    // 工具
     PreviewTool* tool = new PreviewTool(&app);
     tool->init();
 

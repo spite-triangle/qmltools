@@ -25,11 +25,11 @@ Window {
         Rectangle{
             width: 120
             height: 200
-            color: "blue"
+            color: "red"
         }
 
         Button {
-            text: "Ok1133"
+            text: "Ok12212s11233"
             onClicked: {
                 root.color = Qt.rgba(Math.random(), Math.random(), Math.random(), 1);
             }

@@ -6,6 +6,8 @@
 #include <string>
 #include <stdio.h>
 
+#include "common/log.hpp"
+
 #define FUNC_SET(type, name, fcn) \
     void set##fcn(type const & other){\
         if(other == name) return; \
@@ -39,13 +41,13 @@
 #define CONSOLE_DEBUG(text,...) printf( "WARN [%s:%d] " text "\n", _FILE_NAME_ ,__LINE__ ,##__VA_ARGS__)
 
 #else
-#define LOG_ERROR(text,...) 
-#define LOG_DEBUG(text,...) 
-#define LOG_WARN(text,...) 
+#define LOG_ERROR(text,...)  OwO::Logger::Instance()->log("ERROR [%s:%d] " text "\n", _FILE_NAME_ ,__LINE__ ,##__VA_ARGS__)
+#define LOG_DEBUG(text,...) OwO::Logger::Instance()->log("DEBUG [%s:%d] " text "\n", _FILE_NAME_ ,__LINE__ ,##__VA_ARGS__)
+#define LOG_WARN(text,...) OwO::Logger::Instance()->log("WARN [%s:%d] " text "\n", _FILE_NAME_ ,__LINE__ ,##__VA_ARGS__)
 
-#define CONSOLE_ERROR(text,...) printf( ">> " text "\n" ,##__VA_ARGS__)
-#define CONSOLE_WARN(text,...) printf( ">> " text "\n",##__VA_ARGS__)
-#define CONSOLE_DEBUG(text,...) printf( ">> " text "\n",##__VA_ARGS__)
+#define CONSOLE_ERROR(text,...) LOG_ERROR(text,##__VA_ARGS__); printf( ">> " text "\n" ,##__VA_ARGS__)
+#define CONSOLE_WARN(text,...) LOG_ERROR(text,##__VA_ARGS__);printf( ">> " text "\n",##__VA_ARGS__)
+#define CONSOLE_DEBUG(text,...) LOG_ERROR(text,##__VA_ARGS__);printf( ">> " text "\n",##__VA_ARGS__)
 #endif
 
 

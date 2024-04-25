@@ -5,6 +5,7 @@
 #include <sstream>
 #include <QString>
 
+
 namespace OwO
 {
     template<class ... Args>
@@ -19,6 +20,7 @@ namespace OwO
     extern QString Utf8ToQString(const std::string & str);
     extern QString GbkToQString(const std::string & str);
     extern QString ToQString(const std::string & str);
+    extern std::string ToStdString(const QString & str);
 } // namespace OwO
 
 

@@ -3,8 +3,10 @@
 
 #include <QSet>
 #include <QHash>
+#include <QTimer>
 #include <QObject>
 #include <QString>
+#include <QDateTime>
 
 #include "utils/qrcparser.h"
 #include "utils/filesystemwatcher.h"
@@ -34,8 +36,11 @@ public:
     // 将 strPath 路径的文件读取到内存
     QByteArray loadFile(const QString & strPath, bool & bRes);
 
+    // 更新关注的 qml 路径
+    void updateFocusQml();
+
 public slots:
-    void onPathRequested(const QString & strPath, const bool & bReload);
+    void onPathRequested(const QString & strPath);
 
     // m_watcher 监控的文件发生了改变
     void onFileChanged(const QString & strPath);
@@ -64,7 +69,8 @@ private:
     void printErrorMessage(const QString & file, const QList<QmlJS::DiagnosticMessage> & lstMsg);
 
 private:
-
+    QTimer* m_timer;
+    QHash<QString, QDateTime> m_mapFileModifyTime;
     Utils::FileSystemWatcher m_watcher; // 文件监控
     FileFinderPtr_t m_pFinder; // 文件查找
     Utils::QrcCache m_qrcs; // qrc 管理器

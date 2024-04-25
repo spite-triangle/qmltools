@@ -34,7 +34,7 @@ public slots:
     void onErrorMessage(const QString & name);
 
 signals:
-    void sigPathRequested(const QString & path, const bool & bReload);
+    void sigPathRequested(const QString & path);
     void sigDebugServiceUnavailable(const QString & name);
 
 protected:
