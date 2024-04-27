@@ -6,7 +6,6 @@
 
 #include "test/testQrcParse.hpp"
 #include "test/testFileWatcher.hpp"
-#include "test/testCommand.hpp"
 
 int TestMain(int argc, char  *argv[])
 {

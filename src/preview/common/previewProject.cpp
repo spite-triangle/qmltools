@@ -5,7 +5,8 @@
 #include <QCoreApplication>
 
 #include "common/utils.h"
-#include "common/argparse.hpp"
+#include "common/CLI11.hpp"
+#include "common/previewLog.hpp"
 #include "previewProject.h"
 
 void ProjectExplorer::Project::appendQrcFile(const QString &strPath)
@@ -17,128 +18,149 @@ void ProjectExplorer::Project::appendExtendSearchFolder(const QString &strPath)
     m_setting.setExtendSearchFolder.insert(strPath);
 }
 
-bool ProjectExplorer::Project::parserCommand(int argc, char *argv[])
+int ProjectExplorer::Project::parserCommand(int argc, char *argv[])
 {
     m_setting.strRunFolder = QCoreApplication::applicationDirPath();
 
-    auto args = util::argparser(R"(
+    CLI::App app(R"(
 The QML preview tool will listen project files dependent by the Quick application
 and refreshe application live with these files change.
 Files include *.qml, *.js, *.qrc, qmldir etc.
-)");
+)", "qmlpreviewtool");
 
-    args.set_program_name("qmlpreviewtool")
-        .add_help_option()
-        .add_sc_option("", "--version", "show version info", [&]() {
-            std::cout << "version " << OwO::QStringToUtf8(m_setting.strVersion) << std::endl;
-        })
-        .add_option("-v", "--verbose", "Print more debug information to `log/run.log`.")
-        .add_option<std::string>("-l","--language","Configure language QLocale.","")
-        .add_option<int64_t>("-i","--interval","Interval (ms) to update file change.", 2000)
-        .add_option<std::string>("-t","--target", "File path. The target program to be started and previewed.","")
-        .add_option<std::string>("","--cwd","The workspace folder of target program.","")
-        .add_option<std::string>("-h","--host", "The host of QML debug server.","127.0.0.1")
-        .add_option<int64_t>("-p","--port", "The port of QML debug server.",2333)
-        .add_option<std::string>("-s","--socket", "The socket file of QML debug server.","")
-        .add_option<std::string>("","--qrc",".qrc file path. Multiple files are separated by `;`.","")
-        .add_option<std::string>("","--search","Extend asset search folder. Multiple folders are separated by `;`.","")
-        .add_option<std::string>("","--limit","Limit folder to search asset.","")
-        .add_named_argument<std::string>("project", "Project folder path.")
-        .add_named_argument<std::string>("focus", "File path. The QML file be focused.")
-        .parse(argc, argv);
+    argv = app.ensure_utf8(argv);
+    app.set_help_flag("-?,--help", "Print this help message and exit.");
+    app.set_version_flag("--version",OwO::ToStdString(m_setting.strVersion));
 
-    QDir root(m_setting.strRunFolder);
+    app.add_flag("-v,--verbose", m_setting.bLog, "Print more debug information to `log/run.log`.");
+    app.add_flag("--quiet", m_setting.bConsoleLog, "Print console Message.")
+        ->default_val(false);
 
-    if(args.has_option("--verbose")){
-        logFolder();
-        m_setting.bLog = true;
-    }
+    app.add_option("-z,--zoom", m_setting.fZoom, "Display zoom factor.")
+        ->default_val(1.0)
+        ->check(CLI::Range(0.2,10.0));
 
-    {
-        int64_t nInterval = args.get_option_int64("--interval");
-        if(nInterval <= 0){
-            m_setting.uUpdateInterval = 2000;
-        }
-        m_setting.uUpdateInterval = nInterval;
-    }
+    app.add_option("-i,--interval",m_setting.uUpdateInterval,"Interval (ms) to update file change.")
+        ->default_val(2000)
+        ->check(CLI::Range(1000,10000));
 
-    if(args.get_option_string("--language").empty() == false){
-        m_setting.language = QLocale(OwO::ToQString(args.get_option_string("--language")));
-    }
+    app.add_option_function<std::string>("-t,--target", 
+        [&](const std::string & val){
+            m_setting.strTargetFile = OwO::Utf8ToQString(val);
 
-    if(args.get_option_string("--target").empty() == false){
-        m_setting.strTargetFile = root.absoluteFilePath(OwO::ToQString(args.get_option_string("--target")));
-        QFileInfo file(m_setting.strTargetFile);
-        if(file.exists() == false || file.isExecutable() == false) {
-            CONSOLE_ERROR("the value of --target isn't a executable programe.");
-            return false;
-        }
-    }
-    
-    if(args.get_option_string("--cwd").empty() == false){
-        m_setting.strTargetWorkFolder = root.absoluteFilePath(OwO::ToQString(args.get_option_string("--cwd")));
-        if(root.exists(m_setting.strTargetWorkFolder) == false){
-            CONSOLE_ERROR("the value of --cwd isn't a valid folder.");
-            return false;
-        }
-    }
-    
-    m_setting.strSocketFile = OwO::ToQString(args.get_option_string("--socket"));
-    if(m_setting.strSocketFile.isEmpty()){
-        m_setting.uport = args.get_option_int64("--port");
-        m_setting.strHost = OwO::ToQString(args.get_option_string("--host"));
-    }
-    
-    if(args.get_option_string("--search").empty() == false){
-        QStringList lstFolder = OwO::ToQString(args.get_option_string("--search")).split(";");
-        for (auto & folder: lstFolder)
-        {
-            if(root.exists(folder) == false)  continue;
+            QFileInfo file(m_setting.strTargetFile);
+            if(file.exists() == false || file.isExecutable() == false){
+                throw CLI::ValidationError("target path isn't a valid executable file.");
+            }
+        },
+        "File path. The target program will be launched for live preview.");
 
-            m_setting.setExtendSearchFolder.insert(root.absoluteFilePath(folder));
-        }
-    }
-    
-    if(args.get_option_string("--qrc").empty() == false){
-        QStringList lstFiles = OwO::ToQString(args.get_option_string("--qrc")).split(";");
-        for(auto & file : lstFiles){
-            QFileInfo info(root.absoluteFilePath(file));
-            if(info.exists() == false || info.suffix() != "qrc") continue;
+    app.add_option_function<std::string>("--cwd",
+        [&](const std::string & val){
+            m_setting.strTargetWorkFolder = OwO::Utf8ToQString(val);
+        }, 
+        "The workspace folder of target program.");
 
-            m_setting.setQrcFile.insert(info.absoluteFilePath());
-        } 
-    }
+    app.add_option_function<std::string>("-s,--socket", 
+        [&](const std::string & val){
+            m_setting.strSocketFile = OwO::Utf8ToQString(val);
+        }, 
+        "The socket file of QML debug server.");
 
-    if(args.get_option_string("--limit").empty() == false){
-        QString str = root.absoluteFilePath(OwO::ToQString(args.get_option_string("--limit")));
-        if(root.exists(root.absoluteFilePath(str)) == true){
-            m_setting.strLimitedFolder = root.absoluteFilePath(str);
-        }
-    }
-    
-    {
-        QFileInfo file(root.absoluteFilePath(OwO::ToQString(args.get_argument_string("focus"))));
-        if(file.exists() == false || file.suffix() != "qml"){
-            CONSOLE_ERROR("the value of focus isn't a QML file.");
-            return false;
-        }
+    app.add_option_function<std::string>("-h,--host",
+        [&](const std::string & val){
+            m_setting.strHost = OwO::Utf8ToQString(val);
+        },             
+        "The host of QML debug server.")
+        ->default_val("127.0.0.1");
 
-        m_setting.strFocusLocalQml = file.absoluteFilePath();
-    }
-    {
-        QString strFolder = OwO::ToQString(args.get_argument_string("project"));
-        if(root.exists(strFolder) == false){
-            CONSOLE_ERROR("the value of project isn't a project folder.");
-            return false;
-        }
-        m_setting.strPojectFolder = root.absoluteFilePath(strFolder);
-    }
-    return true;
+    app.add_option("-p,--port", m_setting.uport,"The port of QML debug server.")
+        ->default_val(2333)
+        ->check(CLI::Range(0,65535));
+
+    app.add_option_function<std::vector<std::string>>("--qrc",
+        [&](const std::vector<std::string> & vals){
+            for(auto & val :vals){
+                QString strFile = OwO::Utf8ToQString(val);
+                if(QFileInfo(strFile).exists() == false) continue; 
+                m_setting.setQrcFile.insert(std::move(strFile));
+            }
+        },
+        "*.qrc file path. Multiple files are separated by `;`.")
+        ->delimiter(';');
+
+    app.add_option_function<std::vector<std::string>>("--search",
+        [&](const std::vector<std::string> & vals){
+            for(auto & val :vals){
+                QString strFile = OwO::Utf8ToQString(val);
+                if(QDir(strFile).exists() == false) continue;
+                m_setting.setQrcFile.insert(std::move(strFile));
+            }
+        },            
+        "Extend asset search folder. Multiple folders are separated by `;`.")
+        ->delimiter(';');
+
+    app.add_option_function<std::string>("--limit",
+        [&](const std::string & val){
+            m_setting.strLimitedFolder = OwO::Utf8ToQString(val);
+            return true;
+        }, 
+        "Limit folder to search asset.");
+
+    auto group = app.add_option_group("Required", "These options have to configure.");
+
+    group->add_option_function<std::string>("--project",
+        [&](const std::string & val){
+            m_setting.strPojectFolder = OwO::Utf8ToQString(val);
+            QFileInfo dir(m_setting.strPojectFolder);
+            if(dir.exists() == false || dir.isDir() == false){
+                throw CLI::ValidationError("project folder isn't a valid folder path");
+            }
+        },
+        "Project folder path.")
+        ->required(true);
+
+    group->add_option_function<std::string>("--focus",
+        [&](const std::string & val){
+            m_setting.strFocusLocalQml = OwO::Utf8ToQString(val);
+
+            QFileInfo file(m_setting.strFocusLocalQml);
+            if(file.exists() == false && file.suffix() != "qml"){
+                throw CLI::ValidationError("focus file isn't a valid qml file");
+            }
+        },
+        "File path. The primary QML file will be previewed.")
+        ->required(true);
+
+    app.get_option("--host")
+        ->excludes(app.get_option("--socket"))
+        ->needs(app.get_option("--port"));
+
+    app.get_option("--port")
+        ->excludes(app.get_option("--socket"))
+        ->needs(app.get_option("--host"));
+
+    std::shared_ptr<CLI::FormatterBase> fmt = std::make_shared<CLI::Formatter>();
+    fmt->column_width(50);
+    app.formatter(fmt);
+
+    try {
+        app.parse(argc, argv);
+    } catch (const CLI::ParseError &e) {
+        return app.exit(e);
+    }  
+    return 0;
 }
+
 
 bool ProjectExplorer::Project::logFolder()
 {
     QDir root(QCoreApplication::applicationDirPath());
     root.mkdir("log");
     return true;
+}
+
+bool ProjectExplorer::Project::checkExist(const QString &strFile )
+{
+    return QFileInfo(strFile).exists();
 }

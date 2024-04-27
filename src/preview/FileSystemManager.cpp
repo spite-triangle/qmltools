@@ -8,8 +8,8 @@
 
 #include "utils/qrcparser.h"
 
-
 #include "common/utils.h"
+#include "common/previewLog.hpp"
 #include "common/previewProject.h"
 
 using namespace Utils;
@@ -72,10 +72,15 @@ bool FileSystemManger::init()
     }
     m_pFinder->setAdditionalSearchDirectories(paths);
     
+    
+
+
 
     /* 连接 */
     bool bFlag = false;
-    bFlag = connect(&m_watcher, &FileSystemWatcher::fileChanged, this, &FileSystemManger::onFileChanged);
+    bFlag = connect(&m_watcher, &FileSystemWatcher::fileChanged, this, [this](const QString &path){
+            onFileChanged(path , true);
+        });
     ASSERT_RETURN(bFlag == true, "failed to connect FileSystemWatcher::fileChanged", false);
 
 
@@ -102,15 +107,26 @@ void FileSystemManger::updateFocusQml()
     if(project->getFocusLocalQml().isEmpty() == false){
         auto qrcUrl = findQrcUrlByParser(project->getFocusLocalQml());
         project->setFocusQrcQml(qrcUrl);
+        LOG_DEBUG("focus qml file %s", OwO::QStringToUtf8(qrcUrl).c_str());
+    }
+}
+
+void FileSystemManger::addFile(const QString &strPath)
+{
+    if(m_watcher.watchesFile(strPath) == false){
+        m_watcher.addFile(strPath, Utils::FileSystemWatcher::WatchModifiedDate);
     }
 }
 
 void FileSystemManger::onPathRequested(const QString & strPath) {
+    LOG_DEBUG("request %s", OwO::QStringToUtf8(strPath).c_str());
+
     auto project = Project::Instance();
 
     auto fileHandler = [&](const Utils::FilePath &filePath, int confidence){
         if(confidence != strPath.length()){
             emit sigAnnounceError(strPath);
+            LOG_DEBUG("failed to import %s", OwO::QStringToUtf8(strPath).c_str());
             return;
         }
 
@@ -129,28 +145,29 @@ void FileSystemManger::onPathRequested(const QString & strPath) {
         } 
 
         emit sigAnnounceFile(strPath, contents);
+        LOG_DEBUG("import %s", OwO::QStringToUtf8(strPath).c_str());
     };
 
     auto directoryHandler = [&](const QStringList &entries, int confidence){
         if(confidence != strPath.length()){
             emit sigAnnounceError(strPath);
+            LOG_DEBUG("failed to import %s", OwO::QStringToUtf8(strPath).c_str());
         }else{
             emit sigAnnounceDirectory(strPath, entries);
+            LOG_DEBUG("import %s", OwO::QStringToUtf8(strPath).c_str());
         }
     };
 
     // 通过 qrc 解析器查找 qrc路径对应的文件，没有文件夹
-    QString strSource = findSourceByParser(strPath);
-    if(strSource.isEmpty() == false){
-        fileHandler(FilePath::fromString(strSource), strPath.length());
-        return;
-    }else{
+    bool bFlag = findSourceByParser(strPath, fileHandler, directoryHandler);
+    if(bFlag == true) return;
 
-        // 解析器不能查找的内容，由 m_pFinder 来查找
-        bool bFlag = m_pFinder->findFileOrDirectory(FilePath::fromString(strPath), fileHandler, directoryHandler);
-        if(bFlag == true) return; 
-    }
+    // 解析器不能查找的内容，由 m_pFinder 来查找
+    bFlag = m_pFinder->findFileOrDirectory(FilePath::fromString(strPath), fileHandler, directoryHandler);
+    if(bFlag == true) return;
+
     emit sigAnnounceError(strPath);
+    
 }
 
 
@@ -171,27 +188,29 @@ QByteArray FileSystemManger::loadFile(const QString &strPath, bool &bRes)
 
 
 
-void FileSystemManger::onFileChanged(const QString &strPath)
+void FileSystemManger::onFileChanged(const QString &strPath, bool bCheck)
 {
     // Project::Instance()->getUpdateInterval() 大于时间间隔才刷新
-    if(m_mapFileModifyTime.contains(strPath) == true){
-        auto & last = m_mapFileModifyTime[strPath];
-        auto  now = QFileInfo(strPath).fileTime(QFile::FileModificationTime);
+    if(bCheck == true){
+        if(m_mapFileModifyTime.contains(strPath) == true){
+            auto & last = m_mapFileModifyTime[strPath];
+            auto  now = QFileInfo(strPath).fileTime(QFile::FileModificationTime);
 
-        if(last.msecsTo(now) > Project::Instance()->getUpdateInterval()){
-            m_mapFileModifyTime[strPath] = now;
+            if(last.msecsTo(now) > Project::Instance()->getUpdateInterval()){
+                m_mapFileModifyTime[strPath] = now;
+            }else{
+                return;
+            }
         }else{
-            return;
+            m_mapFileModifyTime[strPath] = QFileInfo(strPath).fileTime(QFile::FileModificationTime);
         }
-    }else{
-        m_mapFileModifyTime[strPath] = QFileInfo(strPath).fileTime(QFile::FileModificationTime);
     }
-
+    LOG_DEBUG("file change : %s", OwO::QStringToUtf8(strPath).c_str());
 
     bool bFlag = false;
     QByteArray contents = loadFile(strPath, bFlag);
     if(bFlag == false){
-        CONSOLE_ERROR("failed to load file : %s", strPath.toStdString().c_str());
+        LOG_ERROR("failed to load file : %s", strPath.toStdString().c_str());
         m_watcher.removeFile(strPath);
         m_mapFileModifyTime.remove(strPath);
         return;
@@ -214,8 +233,6 @@ void FileSystemManger::onFileChanged(const QString &strPath)
 
     emit sigLoadUrl(Project::Instance()->getFocusQrcQml());
 }
-
-
 
 // TODO -  非 Desktop Device ，不能直接用本地路
 QString FileSystemManger::findQrcUrlByParser(const QString &strSource)
@@ -241,35 +258,54 @@ QString FileSystemManger::findQrcUrlByParser(const QString &strSource)
     return strSource;
 }
 
-QString FileSystemManger::findSourceByParser(const QString &strQrc)
+bool FileSystemManger::findSourceByParser(const QString &strQrc, FileHandler fileHandler, DirectoryHandler directoryHandler)
 {
     QString strQrcUrl;
     if(strQrc.startsWith(QLatin1Char(':')) == true){
         strQrcUrl = strQrc.mid(1);
     }else{
-        return QString();
+        return false;
     }
 
     auto & qrcFiles = Project::Instance()->getQrcFiles();
     auto & lang = Project::Instance()->getLanguage();
 
-    QStringList res;
-
-    // 在 qrc 解析器中查找
+    // 在 qrc 解析器中查找文件
+    QStringList resFile;
     for (auto & qrc : qrcFiles)
     {
         QrcParser::ConstPtr parser = m_qrcs.parsedPath(qrc);
         if(parser == nullptr) continue;
 
-        parser->collectFilesAtPath(strQrcUrl, &res , &lang);
+        parser->collectFilesAtPath(strQrcUrl, &resFile , &lang);
+        if(resFile.size() <= 0) continue;
 
-        if(res.size() > 0){
-            return res.first();
-        } 
+        fileHandler(Utils::FilePath::fromFileInfo(QFileInfo(resFile[0])), strQrc.length());
+        return true;
     }
 
-    return QString();
+    // 在 qrc 解析器中查找文件夹
+    if(strQrcUrl.endsWith('/') == false){
+        strQrcUrl += "/";
+    }
+
+    QMap<QString, QStringList> res;
+    for (auto & qrc : qrcFiles)
+    {
+        QrcParser::ConstPtr parser = m_qrcs.parsedPath(qrc);
+        if(parser == nullptr) continue;
+
+        parser->collectFilesInPath(strQrcUrl, &res, true , &lang);
+        if(res.size() <= 0) continue;
+
+        directoryHandler(res[0], strQrc.length());
+        return true;
+    }
+
+
+    return false;
 }
+
 
 bool FileSystemManger::checkFileValid(const QString &strSource, const QByteArray & content, const FILE_TYPE_E & enType)
 {
@@ -330,6 +366,8 @@ void FileSystemManger::printErrorMessage(const QString & file,const QList<QmlJS:
         CONSOLE_ERROR("%s", OwO::QStringToUtf8(str).c_str());
     }
 }
+
+
 
 FileSystemManger::FILE_TYPE_E FileSystemManger::inspectFileType(const QString &strSource)
 {

@@ -8,7 +8,7 @@
 
 #include <qmldebug/qmldebugclient.h>
 
-#include "common/defines.h"
+#include "common/utils.h"
 #include "common/previewDefines.h"
 
 class PreviewClient : public QmlDebug::QmlDebugClient{

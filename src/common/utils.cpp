@@ -11,21 +11,21 @@ namespace OwO
     return str.toStdString().data();
     }
 
-    extern std::string QStringToGbk(const QString & str){
+    extern std::string QStringToLocal(const QString & str){
         return str.toLocal8Bit().data();
     }
 
     extern QString Utf8ToQString(const std::string & str){
-        return QString::fromLatin1(str.c_str());
+        return QString::fromStdString(str.c_str());
     }
 
-    extern QString GbkToQString(const std::string & str){
+    extern QString LocalToQString(const std::string & str){
         return QString::fromLocal8Bit(str.c_str());
     }
 
     extern QString ToQString(const std::string & str){
 #ifdef __linux__
-        return QString::fromLatin1(str.c_str());
+        return QString::fromStdString(str.c_str());
 #else
         return QString::fromLocal8Bit(str.c_str());
 #endif
@@ -35,7 +35,7 @@ namespace OwO
 #ifdef __linux__
         return QStringToUtf8(str);
 #else
-        return QStringToGbk(str);
+        return QStringToLocal(str);
 #endif
     }
 

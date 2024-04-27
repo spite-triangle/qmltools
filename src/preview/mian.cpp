@@ -1,5 +1,6 @@
 #include "test/testMain.hpp"
 
+#include <QUrl>
 #include <QDir>
 #include <QTimer>
 #include <QProcess>
@@ -7,24 +8,19 @@
 
 #include "previewTool.h"
 #include "common/utils.h"
-#include "common/log.hpp"
+#include "common/previewLog.hpp"
 #include "common/previewProject.h"
 #include "debugClient/previewConnectManager.h"
-
-// xmake r preview --qrc "E:\workspace\qt_servitor\tools\src\demo\main.qrc" --target "E:\workspace\qt_servitor\tools\bin\demo\demo.exe" -s "C:/Windows/Temp/preview_test/preview.socket" project="E:\workspace\qt_servitor\tools\src\demo" focus="E:\workspace\qt_servitor\tools\src\demo\main.qml"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
     auto project =  ProjectExplorer::Project::Instance();
-    if(project->parserCommand(argc, argv) == false) return -1;
+    int code = project->parserCommand(argc, argv);
+    if(code != 0) return code;
 
 #ifdef DOCT_TEST
-    project->setLanguage(QLocale());
-    project->setFocusLocalQml("E:/workspace/qt_servitor/tools/src/demo/main.qml");
-    project->appendQrcFile("E:/workspace/qt_servitor/tools/src/demo/main.qrc");
-    project->setProjectFolder("E:/workspace/qt_servitor/tools/src/demo/");
     TestMain(argc, argv);
 #endif
 
@@ -38,13 +34,16 @@ int main(int argc, char *argv[])
     // 连接调试器服务
     QTimer * timer = new QTimer(&app);
     timer->singleShot(100, [&](){
-        QString server;
+        QUrl server;
         if(project->getSocketFile().isEmpty()){
-            server = QString("tcp:%1:%2").arg(project->getHost()).arg(QString::number(project->getPort()));
+            server.setScheme("tcp");
+            server.setHost(project->getHost());
+            server.setPort(project->getPort());
         }else{
-            server = QString("socket:%1").arg(project->getSocketFile());
+            server.setScheme("socket");
+            server.setPath(project->getSocketFile());
         }
-        tool->connectServer(server);
+        tool->connectServer(server.toString());
     });
     
 
@@ -61,6 +60,16 @@ int main(int argc, char *argv[])
             }
         });
 
+        QObject::connect(target, &QProcess::finished, [](int exitCode, QProcess::ExitStatus exitStatus){
+            LOG_DEBUG("sub process is closed.");
+            QCoreApplication::quit();
+        });
+
+        QObject::connect(target, &QProcess::errorOccurred, [&](QProcess::ProcessError error){
+            LOG_DEBUG("sub process crash.");
+            QCoreApplication::quit();
+        });
+
         // 启动子程序
         QString server;
         if(project->getSocketFile().isEmpty()){
@@ -71,7 +80,7 @@ int main(int argc, char *argv[])
 
         QStringList lstArgs;
         lstArgs.append(QString("-qmljsdebugger=%1,block").arg(server));
-        target->start(project->getTarget(), lstArgs); 
+        target->start(project->getTarget(), lstArgs);
     }else{
         timer->start();
     }

@@ -4,10 +4,15 @@
 #include <QUrl>
 #include <QCoreApplication>
 
+#include <iostream>
+
+#include "common/utils.h"
+#include "common/previewLog.hpp"
 #include "common/previewProject.h"
 
+bool PreviewTool::m_bQuit = false;
+
 PreviewTool::PreviewTool(QObject * parent) {
-    m_bQuit = false;
 }
 
 bool PreviewTool::init() {
@@ -46,6 +51,23 @@ bool PreviewTool::init() {
     bFlag = connect(m_fileSystemManager, &FileSystemManger::sigRerun, 
                     m_connectManager, &PreviewConnectManager::onRerun);
     ASSERT_RETURN(bFlag == true, "failed to connect sigRerun", false);
+    
+    // 交互子线程
+    bFlag = connect(this, &PreviewTool::sigFocusChange, m_fileSystemManager, 
+        [&](const QString & path){
+            ASSERT_RETURN(m_fileSystemManager != nullptr, "m_fileSystemManager == nullptr");
+            m_fileSystemManager->onFileChanged(path, false);
+        });
+    ASSERT_RETURN(bFlag == true, "failed to connect sigFocusChange", false);
+
+    bFlag = connect(this, &PreviewTool::sigRerun,
+                   m_connectManager, &PreviewConnectManager::onRerun);
+    ASSERT_RETURN(bFlag == true, "failed to connect sigRerun", false);
+
+    bFlag = connect(this, &PreviewTool::sigZoom,
+                   m_connectManager, &PreviewConnectManager::onZoom);
+    ASSERT_RETURN(bFlag == true, "failed to connect sigZoom", false);
+
 
     // debug 客户端连接目标程序
     bFlag = connect(m_connectManager, &PreviewConnectManager::sigPathRequested, 
@@ -62,6 +84,11 @@ bool PreviewTool::init() {
         // 激活需要预览的 qml 文件
         auto project = ProjectExplorer::Project::Instance();
         m_connectManager->onLoadUrl(project->getFocusQrcQml());
+        m_connectManager->onZoom(project->getZoom());
+
+        /* 创建一个交互线程 */
+        m_pInterface = std::shared_ptr<std::thread>(new std::thread(&PreviewTool::runInterface, this), PreviewTool::closeThread);
+        ASSERT_RETURN(m_pInterface != nullptr, "failed to create a interface thread.")
     });
     ASSERT_RETURN(bFlag == true, "failed to connect connectionOpened", false);
 
@@ -78,7 +105,6 @@ bool PreviewTool::init() {
     ASSERT_RETURN(bFlag == true, "failed to connect connectionClosed", false);
 
     return true;
-
 }
 
 
@@ -107,4 +133,39 @@ void PreviewTool::onApplicationQuit()
 
 void PreviewTool::onDebugServiceUnavailable(const QString & name) {
     QCoreApplication::quit();
+}
+
+void PreviewTool::initCommands()
+{
+    m_commandManager.add("reflash", "Reflash preview interface.", [&](){
+        emit sigRerun();
+        INTERFACE_DEBUG("");
+    });
+
+    m_commandManager.add<float>("zoom", "Display zoom factor.", [&](const float & val){
+        emit sigZoom(val);
+    });
+
+    m_commandManager.add("help", "Commands description.", [&](){
+        INTERFACE_DEBUG("%s", m_commandManager.usage().c_str());
+    });
+}
+
+void PreviewTool::runInterface()
+{
+    initCommands();
+
+    std::string in;
+    while (std::getline(std::cin, in))
+    {
+        m_commandManager.parse(std::move(in));
+    }
+}
+
+void PreviewTool::closeThread(std::thread *p)
+{
+    if(p == nullptr) return;
+    if(p->joinable() == true){
+        p->detach();
+    }
 }

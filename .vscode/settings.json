@@ -93,7 +93,9 @@
         "qcoreapplication": "cpp",
         "qprocess": "cpp",
         "hash_map": "cpp",
-        "qhash": "cpp"
+        "qhash": "cpp",
+        "xmemory": "cpp",
+        "xutility": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "qt.installPath": "D:/ProgramData/Qt6"

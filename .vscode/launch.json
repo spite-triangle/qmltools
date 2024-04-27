@@ -28,13 +28,19 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/preview/preview.exe",
             "args": [
+                "--target=E:/workspace/qt_servitor/tools/bin/demo/demo.exe",
+                "-s C:/Windows/Temp/preview_test/preview.socket",
+                "-v",
+                "--qrc=E:/workspace/qt_servitor/tools/src/demo/main.qrc",
+                "--project=E:/workspace/qt_servitor/tools/src/demo",
+                "--focus=E:/workspace/qt_servitor/tools/src/demo/qml/main.qml"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/bin/preview/",
             "environment": [
                 {
                     "name": "path",
-                    "value": "D:\\ProgramData\\Qt6\\6.7.0\\msvc2019_64\\bin;E:/workspace/qml/qt-creator/build/bin/Debug"
+                    "value": "D:/ProgramData/Qt6/6.7.0/msvc2019_64/bin;E:/workspace/qml/qt-creator/build/bin/Debug"
                 }
             ],
             "console": "integratedTerminal",

@@ -11,7 +11,7 @@ add_includedirs("include/qmljs",
                 "include/utils/mimetypes2",
                 "include/3rdparty")
 
-add_runenvs("PATH","E:/workspace/qml/qt-creator/build/bin/Debug")
+-- add_runenvs("PATH","E:/workspace/qml/qt-creator/build/bin/Debug")
 
 target("demo")
 

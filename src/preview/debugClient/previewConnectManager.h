@@ -7,7 +7,7 @@
 
 #include <qmldebug/qmldebugconnectionmanager.h>
 
-#include "common/defines.h"
+
 #include "common/previewDefines.h"
 #include "debugClient/previewClient.h"
 #include "debugClient/TranslationClient.h"

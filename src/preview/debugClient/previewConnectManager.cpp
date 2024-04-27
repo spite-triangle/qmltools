@@ -6,6 +6,7 @@
 #include <QRegularExpressionMatch>
 
 #include "common/utils.h"
+#include "common/previewLog.hpp"
 #include "previewConnectManager.h"
 
 PreviewConnectManager::PreviewConnectManager(QObject *parent)
@@ -97,26 +98,18 @@ void PreviewConnectManager::onDebugServiceUnavailable(const QString &name)
 
 void PreviewConnectManager::onErrorMessage(const QString & strMsgText)
 {
-    static  QRegularExpression reg(R"(qrc(:\S+):)");
+    static  QRegularExpression reg(R"(qrc(:\S+):-1)");
 
-    QString url;
     QStringList msgs = strMsgText.split('\n');
     for (auto & msg : msgs)
     {
         QString line = msg.simplified(); 
-        if (line.endsWith("No such file or directory") == true)
-        {
-            QRegularExpressionMatch match = reg.match(line);
-            if(match.hasMatch() != true) continue;
+        if(line.isEmpty()) continue;
+        CONSOLE_ERROR("%s", OwO::QStringToUtf8(line).c_str());
 
-            url = match.captured(1);
-            break;
-        }
+        // 重新加载空文件
+        QRegularExpressionMatch match = reg.match(line);
+        if(match.hasMatch() != true) continue;
+        emit sigPathRequested(match.captured(1));
     }
-
-    if(url.isEmpty() == false){
-        emit sigPathRequested(url);
-    }
-
-    CONSOLE_ERROR("%s", OwO::QStringToUtf8(strMsgText.simplified()).c_str());
 }

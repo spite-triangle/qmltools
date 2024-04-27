@@ -6,7 +6,7 @@
 #include <QObject>
 #include <QLocale>
 
-#include "common/defines.h"
+#include "common/utils.h"
 #include "common/singleton.hpp"
 
 namespace ProjectExplorer 
@@ -25,11 +25,13 @@ public:
         QString strLimitedFolder; // 只在指定的文件夹下查找需要的资源
         QString strTargetFile;
         QString strTargetWorkFolder; // 目标程序工作目录
-        QString strRunFolder;
+        QString strRunFolder; // preview 所在目录
         QString strSocketFile;
         QString strHost;
         size_t  uport;
         size_t  uUpdateInterval;
+        float   fZoom;
+        bool    bConsoleLog; // 控制台打印
         QSet<QString> setQrcFile; // qrc 文件路径
         QSet<QString> setExtendSearchFolder; // 其他额外存在资源的文件夹
         QLocale language; 
@@ -38,7 +40,9 @@ public:
     
 
 public:
-    Project(QObject * p = nullptr) : QObject(p){}
+    Project(QObject * p = nullptr) : QObject(p){
+        m_setting.strVersion = "qmlpreview version 1.0.0";
+    }
 
     FUNC_GET(QString, m_setting.strName, Name);
     FUNC_GET(QString, m_setting.strVersion, Version);
@@ -53,6 +57,8 @@ public:
     FUNC_SET_GET(QString, m_setting.strSocketFile, SocketFile);
     FUNC_SET_GET(QString, m_setting.strHost, Host);
     FUNC_SET_GET(size_t, m_setting.uport, Port);
+    FUNC_SET_GET(float, m_setting.fZoom, Zoom);
+    FUNC_SET_GET(bool, m_setting.bConsoleLog, ConsoleLog);
     FUNC_SET_GET(size_t, m_setting.uUpdateInterval, UpdateInterval);
     FUNC_SET_GET(bool, m_setting.bLog, ExportLog);
     FUNC_GET(QSet<QString>, m_setting.setQrcFile, QrcFiles);
@@ -62,11 +68,13 @@ public:
     void appendExtendSearchFolder(const QString & strPath);
 
     /* 解析命令行 */
-    bool parserCommand(int argc, char *argv[]);
+    int parserCommand(int argc, char *argv[]);
 
     /* 日志文件夹 */
     bool logFolder();
 
+private:
+    bool checkExist(const QString & strFile);
 
 private:
     PROJECT_SETTING_S m_setting;

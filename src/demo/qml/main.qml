@@ -8,7 +8,7 @@ Window {
     visible: true
     width: 640
     height: 480
-    title: qsTr("Hello 120 World")
+    title: qsTr("Hello 120     1 World")
 
     Row{
         Text{
@@ -18,8 +18,12 @@ Window {
             }
         }
 
-        Hello{
-            height: 10
+        Go{
+            
+        }
+
+        Hello1{
+            height: 20
         }
 
         Rectangle{
@@ -29,7 +33,7 @@ Window {
         }
 
         Button {
-            text: "Ok12212s11233"
+            text: "Ok1221   2s11233"
             onClicked: {
                 root.color = Qt.rgba(Math.random(), Math.random(), Math.random(), 1);
             }

@@ -8,6 +8,8 @@
 #include <QString>
 #include <QDateTime>
 
+#include <functional>
+
 #include "utils/qrcparser.h"
 #include "utils/filesystemwatcher.h"
 #include "qmljs/qmljsmodelmanagerinterface.h"
@@ -19,6 +21,8 @@ class FileSystemManger : public QObject{
     Q_OBJECT
 public:
     using Ptr = QPointer<FileSystemManger>;
+    using FileHandler = std::function<void (const Utils::FilePath &, int)>;
+    using DirectoryHandler = std::function<void (const QStringList &, int)>;
 
     // 文件类型
     enum FILE_TYPE_E{
@@ -39,11 +43,14 @@ public:
     // 更新关注的 qml 路径
     void updateFocusQml();
 
+    void addFile(const QString & strPath);
+
 public slots:
     void onPathRequested(const QString & strPath);
 
     // m_watcher 监控的文件发生了改变
-    void onFileChanged(const QString & strPath);
+    void onFileChanged(const QString & strPath, bool bCheck);
+
 
 signals:
     void sigRerun();
@@ -59,7 +66,7 @@ private:
     QString findQrcUrlByParser(const QString & strSource);
 
     /* 根据 qrc 路径查找本地路径 */
-    QString findSourceByParser(const QString & strQrc);
+    bool findSourceByParser(const QString & strQrc, FileHandler fileHandler, DirectoryHandler directoryHandler);
 
     FILE_TYPE_E inspectFileType(const QString & strSource);
     
