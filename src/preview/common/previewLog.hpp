@@ -4,9 +4,11 @@
 #include <stdio.h>
 #include <memory>
 #include <string>
+#include <direct.h>
+#include <atomic>
 
+#include "common/utils.h"
 #include "common/singleton.hpp"
-#include "common/previewProject.h"
 
 
 #ifdef __linux__
@@ -14,6 +16,13 @@
 #else
 #define _FILE_NAME_   (strrchr(__FILE__, '\\') + 1)
 #endif
+
+
+// 神奇的控制台指令
+#define ARG_SPACE(n)  n,""
+#define FORMAT_CLEAR   "\033c"
+#define FORMAT_CURSOR_UP(n) "\r\033[" #n "A"
+#define FORMAT_SPACE  "%*s"
 
 
 // #ifdef DOC_TEST
@@ -27,20 +36,21 @@
 
 // #else
 /* text 为 utf8 格式 */
-#define LOG_ERROR(text,...)     OwO::Logger::Instance()->log("ERROR [%s:%d] " text "\n", _FILE_NAME_ ,__LINE__ ,##__VA_ARGS__)
+#define LOG_ERROR(text,...)     OwO::Logger::Instance()->log("ERROR [%s:%d] " text "\n",  _FILE_NAME_ ,__LINE__ ,##__VA_ARGS__)
 #define LOG_DEBUG(text,...)     OwO::Logger::Instance()->log("DEBUG [%s:%d] " text "\n", _FILE_NAME_ ,__LINE__ ,##__VA_ARGS__)
 #define LOG_WARN(text,...)      OwO::Logger::Instance()->log("WARN [%s:%d] " text "\n", _FILE_NAME_ ,__LINE__ ,##__VA_ARGS__)
 
 /* text 为 utf8 格式 */
 #define CONSOLE_ERROR(text,...) LOG_ERROR(text,##__VA_ARGS__); \
-                                OwO::Logger::Instance()->console( "%s\n", OwO::ToStdString(OwO::Utf8ToQString( OwO::Formats(text, ##__VA_ARGS__))).c_str()); 
+                                OwO::Logger::Instance()->console(OwO::ToStdString(OwO::Utf8ToQString( OwO::Formats(text, ##__VA_ARGS__)))); 
 #define CONSOLE_WARN(text,...)  LOG_WARN(text,##__VA_ARGS__); \
-                                OwO::Logger::Instance()->console( "%s\n", OwO::ToStdString(OwO::Utf8ToQString( OwO::Formats(text, ##__VA_ARGS__))).c_str()); 
+                                OwO::Logger::Instance()->console( OwO::ToStdString(OwO::Utf8ToQString( OwO::Formats(text, ##__VA_ARGS__)))); 
 #define CONSOLE_DEBUG(text,...) LOG_DEBUG(text,##__VA_ARGS__); \
-                                OwO::Logger::Instance()->console( "%s\n", OwO::ToStdString(OwO::Utf8ToQString( OwO::Formats(text, ##__VA_ARGS__))).c_str()); 
+                                OwO::Logger::Instance()->console(OwO::ToStdString(OwO::Utf8ToQString( OwO::Formats(text, ##__VA_ARGS__)))); 
 
 /* text 为 utf8 格式 */
-#define INTERFACE_DEBUG(text,...) LOG_ERROR(text,##__VA_ARGS__); printf("\r%s\n>> ", OwO::ToStdString(OwO::Utf8ToQString( OwO::Formats(text, ##__VA_ARGS__))).c_str())
+#define INTERFACE_DEBUG(text,...)   LOG_ERROR(text,##__VA_ARGS__); \
+                                    OwO::Logger::Instance()->interface(OwO::ToStdString(OwO::Utf8ToQString( OwO::Formats(text, ##__VA_ARGS__))))
 
 
 
@@ -81,22 +91,46 @@ public:
 #endif
     }
 
-    template<class ... Args>
-    void console(const char * format, Args ... args){
-        if(ProjectExplorer::Project::Instance()->getConsoleLog() == false) return;
-        printf(format, args...);
-        /* 输入复位 */
-        printf("\r>> ");
+    void console(const std::string & str){
+        if(m_bConsole == false) return;
+
+        printf(FORMAT_SPACE "\r%s\n>> ", ARG_SPACE(4) ,str.c_str());
+        m_needNewLine.store(true);
     }
-    void init(const std::string & strPath, bool bLog){
+
+    void interface(const std::string & str){
+        if(str.empty()){
+            printf(">> ");
+        }else{
+            printf(FORMAT_SPACE "\r%s\n>> ", ARG_SPACE(10) ,str.c_str());
+        }
+    }
+
+    void init(const std::string & strPath, bool bLog, bool bConsole){
         m_bLog = bLog;
+        m_bConsole = bConsole;
+        m_needNewLine.store(false);
+
         if(bLog == false) return;
         m_logFile = strPath;
+
+        // 创建文件夹
+        std::string folder = strPath.substr(0,strPath.find_last_of('/'));
+        if(OwO::MakeDirectory(folder) == false){
+            CONSOLE_ERROR("failed to make log folder.");
+            m_bLog = false;
+        }
     }
+
+
+    void setNeedNewLine(bool bFlag){ m_needNewLine.store(bFlag); }
+    bool getNeedNewLine() { return m_needNewLine.load();}
 
 private:
     bool m_bLog;
+    bool m_bConsole;
     std::string m_logFile;
+    std::atomic_bool m_needNewLine;
 };
 
 

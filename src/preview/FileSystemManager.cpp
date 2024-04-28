@@ -5,6 +5,8 @@
 #include <QFile>
 #include <QString>
 #include <QFileInfo>
+#include <QElapsedTimer>
+#include <QCoreApplication>
 
 #include "utils/qrcparser.h"
 
@@ -72,17 +74,10 @@ bool FileSystemManger::init()
     }
     m_pFinder->setAdditionalSearchDirectories(paths);
     
-    
-
-
-
     /* 连接 */
     bool bFlag = false;
-    bFlag = connect(&m_watcher, &FileSystemWatcher::fileChanged, this, [this](const QString &path){
-            onFileChanged(path , true);
-        });
+    bFlag = connect(&m_watcher, &FileSystemWatcher::fileChanged, this, &FileSystemManger::onFileChanged);
     ASSERT_RETURN(bFlag == true, "failed to connect FileSystemWatcher::fileChanged", false);
-
 
     /* 解析器 */
     for (auto & qrcFile : project->getQrcFiles())
@@ -118,7 +113,7 @@ void FileSystemManger::addFile(const QString &strPath)
     }
 }
 
-void FileSystemManger::onPathRequested(const QString & strPath) {
+bool FileSystemManger::onPathRequested(const QString & strPath) {
     LOG_DEBUG("request %s", OwO::QStringToUtf8(strPath).c_str());
 
     auto project = Project::Instance();
@@ -160,50 +155,59 @@ void FileSystemManger::onPathRequested(const QString & strPath) {
 
     // 通过 qrc 解析器查找 qrc路径对应的文件，没有文件夹
     bool bFlag = findSourceByParser(strPath, fileHandler, directoryHandler);
-    if(bFlag == true) return;
+    if(bFlag == true) return true;
 
     // 解析器不能查找的内容，由 m_pFinder 来查找
     bFlag = m_pFinder->findFileOrDirectory(FilePath::fromString(strPath), fileHandler, directoryHandler);
-    if(bFlag == true) return;
+    if(bFlag == true) return true;
 
     emit sigAnnounceError(strPath);
-    
+    return false; 
 }
-
 
 
 QByteArray FileSystemManger::loadFile(const QString &strPath, bool &bRes)
 {
     bRes = true;
-
+    QByteArray content;
     QFile file(strPath);
-    {
-        RAII_DEFER(file.close());
 
-        ASSERT_RETURN(file.exists() == true, "file is not exist", bRes = false,QByteArray());
-        ASSERT_RETURN(file.open(QIODevice::ReadOnly) == true, "failed to open file" , bRes = false, QByteArray());
-        return file.readAll(); 
+    ASSERT_RETURN(file.exists() == true, "file is not exist", bRes = false, content);
+
+
+    // NOTE - Qfile 读取文件有概率会为空
+    BLOCK_TRY(3,0){
+        ASSERT_RETURN(file.open(QIODevice::ReadOnly) == true, "failed to open file", bRes = false, content);
+        content = file.readAll();
+        if(content.isEmpty() == false) TRY_BREAK;
+        file.close();
+
+        // 等待
+        QElapsedTimer timer;
+        timer.start();
+        while (timer.elapsed() < 200)
+        {
+            QCoreApplication::processEvents();
+        }
     }
+    return content;
 }
 
 
-
-void FileSystemManger::onFileChanged(const QString &strPath, bool bCheck)
+void FileSystemManger::onFileChanged(const QString &strPath)
 {
     // Project::Instance()->getUpdateInterval() 大于时间间隔才刷新
-    if(bCheck == true){
-        if(m_mapFileModifyTime.contains(strPath) == true){
-            auto & last = m_mapFileModifyTime[strPath];
-            auto  now = QFileInfo(strPath).fileTime(QFile::FileModificationTime);
+    if(m_mapFileModifyTime.contains(strPath) == true){
+        auto & last = m_mapFileModifyTime[strPath];
+        auto  now = QFileInfo(strPath).fileTime(QFile::FileModificationTime);
 
-            if(last.msecsTo(now) > Project::Instance()->getUpdateInterval()){
-                m_mapFileModifyTime[strPath] = now;
-            }else{
-                return;
-            }
+        if(last.msecsTo(now) > Project::Instance()->getUpdateInterval()){
+            m_mapFileModifyTime[strPath] = now;
         }else{
-            m_mapFileModifyTime[strPath] = QFileInfo(strPath).fileTime(QFile::FileModificationTime);
+            return;
         }
+    }else{
+        m_mapFileModifyTime[strPath] = QFileInfo(strPath).fileTime(QFile::FileModificationTime);
     }
     LOG_DEBUG("file change : %s", OwO::QStringToUtf8(strPath).c_str());
 
@@ -229,6 +233,10 @@ void FileSystemManger::onFileChanged(const QString &strPath, bool bCheck)
         emit sigClearCache();
     }else{
         emit sigAnnounceFile(strQrcUrl, contents);
+    }
+
+    if(contents.isEmpty()){
+        LOG_ERROR("content is null.");
     }
 
     emit sigLoadUrl(Project::Instance()->getFocusQrcQml());
@@ -263,7 +271,9 @@ bool FileSystemManger::findSourceByParser(const QString &strQrc, FileHandler fil
     QString strQrcUrl;
     if(strQrc.startsWith(QLatin1Char(':')) == true){
         strQrcUrl = strQrc.mid(1);
-    }else{
+    }
+    else 
+    {
         return false;
     }
 
@@ -298,11 +308,16 @@ bool FileSystemManger::findSourceByParser(const QString &strQrc, FileHandler fil
         parser->collectFilesInPath(strQrcUrl, &res, true , &lang);
         if(res.size() <= 0) continue;
 
-        directoryHandler(res[0], strQrc.length());
+        QStringList entries;
+        for (auto & key : res.keys())
+        {
+            if(key.isEmpty()) continue;
+            entries.append(key);
+        }
+
+        directoryHandler(entries, strQrc.length());
         return true;
     }
-
-
     return false;
 }
 

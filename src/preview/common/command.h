@@ -67,6 +67,20 @@ bool Detail::convert<float>(const Values_t & args, float & out){
 }
 
 template<>
+bool Detail::convert<bool>(const Values_t & args, bool & out){
+    std::string  arg = args[0];
+
+    if(arg == "true" || arg == "1"){
+        out = true;
+    }else if(arg == "false" || arg == "0"){
+        out = false; 
+    }else{
+        return false;
+    }
+    return true;
+}
+
+template<>
 bool Detail::convert<std::string>(const Values_t & args, std::string & out){
     out = args[0];
     return true;
@@ -145,6 +159,8 @@ Operator::Ptr CommandManager::add(const std::string & name, const std::string & 
         bool bFlag = Detail::convert(vals, out);
         if(bFlag){
             func(out);
+        }else{
+            INTERFACE_DEBUG("Check your command args, more infomation see `help`.");
         }
         return bFlag;
     };

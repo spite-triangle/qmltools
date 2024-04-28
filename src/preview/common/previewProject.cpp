@@ -2,7 +2,6 @@
 
 #include <QDir>
 #include <QFileInfo>
-#include <QCoreApplication>
 
 #include "common/utils.h"
 #include "common/CLI11.hpp"
@@ -20,7 +19,6 @@ void ProjectExplorer::Project::appendExtendSearchFolder(const QString &strPath)
 
 int ProjectExplorer::Project::parserCommand(int argc, char *argv[])
 {
-    m_setting.strRunFolder = QCoreApplication::applicationDirPath();
 
     CLI::App app(R"(
 The QML preview tool will listen project files dependent by the Quick application
@@ -46,7 +44,7 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
 
     app.add_option_function<std::string>("-t,--target", 
         [&](const std::string & val){
-            m_setting.strTargetFile = OwO::Utf8ToQString(val);
+            m_setting.strTargetFile = OwO::Utf8ToQString(val).trimmed();
 
             QFileInfo file(m_setting.strTargetFile);
             if(file.exists() == false || file.isExecutable() == false){
@@ -57,19 +55,19 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
 
     app.add_option_function<std::string>("--cwd",
         [&](const std::string & val){
-            m_setting.strTargetWorkFolder = OwO::Utf8ToQString(val);
+            m_setting.strTargetWorkFolder = OwO::Utf8ToQString(val).trimmed();
         }, 
         "The workspace folder of target program.");
 
     app.add_option_function<std::string>("-s,--socket", 
         [&](const std::string & val){
-            m_setting.strSocketFile = OwO::Utf8ToQString(val);
+            m_setting.strSocketFile = OwO::Utf8ToQString(val).trimmed();
         }, 
         "The socket file of QML debug server.");
 
     app.add_option_function<std::string>("-h,--host",
         [&](const std::string & val){
-            m_setting.strHost = OwO::Utf8ToQString(val);
+            m_setting.strHost = OwO::Utf8ToQString(val).trimmed();
         },             
         "The host of QML debug server.")
         ->default_val("127.0.0.1");
@@ -81,7 +79,7 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
     app.add_option_function<std::vector<std::string>>("--qrc",
         [&](const std::vector<std::string> & vals){
             for(auto & val :vals){
-                QString strFile = OwO::Utf8ToQString(val);
+                QString strFile = OwO::Utf8ToQString(val).trimmed();
                 if(QFileInfo(strFile).exists() == false) continue; 
                 m_setting.setQrcFile.insert(std::move(strFile));
             }
@@ -92,7 +90,7 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
     app.add_option_function<std::vector<std::string>>("--search",
         [&](const std::vector<std::string> & vals){
             for(auto & val :vals){
-                QString strFile = OwO::Utf8ToQString(val);
+                QString strFile = OwO::Utf8ToQString(val).trimmed();
                 if(QDir(strFile).exists() == false) continue;
                 m_setting.setQrcFile.insert(std::move(strFile));
             }
@@ -102,7 +100,7 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
 
     app.add_option_function<std::string>("--limit",
         [&](const std::string & val){
-            m_setting.strLimitedFolder = OwO::Utf8ToQString(val);
+            m_setting.strLimitedFolder = OwO::Utf8ToQString(val).trimmed();
             return true;
         }, 
         "Limit folder to search asset.");
@@ -111,7 +109,7 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
 
     group->add_option_function<std::string>("--project",
         [&](const std::string & val){
-            m_setting.strPojectFolder = OwO::Utf8ToQString(val);
+            m_setting.strPojectFolder = OwO::Utf8ToQString(val).trimmed();
             QFileInfo dir(m_setting.strPojectFolder);
             if(dir.exists() == false || dir.isDir() == false){
                 throw CLI::ValidationError("project folder isn't a valid folder path");
@@ -122,7 +120,7 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
 
     group->add_option_function<std::string>("--focus",
         [&](const std::string & val){
-            m_setting.strFocusLocalQml = OwO::Utf8ToQString(val);
+            m_setting.strFocusLocalQml = OwO::Utf8ToQString(val).trimmed();
 
             QFileInfo file(m_setting.strFocusLocalQml);
             if(file.exists() == false && file.suffix() != "qml"){
@@ -149,18 +147,6 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
     } catch (const CLI::ParseError &e) {
         return app.exit(e);
     }  
+
     return 0;
-}
-
-
-bool ProjectExplorer::Project::logFolder()
-{
-    QDir root(QCoreApplication::applicationDirPath());
-    root.mkdir("log");
-    return true;
-}
-
-bool ProjectExplorer::Project::checkExist(const QString &strFile )
-{
-    return QFileInfo(strFile).exists();
 }

@@ -56,7 +56,7 @@ bool PreviewTool::init() {
     bFlag = connect(this, &PreviewTool::sigFocusChange, m_fileSystemManager, 
         [&](const QString & path){
             ASSERT_RETURN(m_fileSystemManager != nullptr, "m_fileSystemManager == nullptr");
-            m_fileSystemManager->onFileChanged(path, false);
+            m_fileSystemManager->onFileChanged(path);
         });
     ASSERT_RETURN(bFlag == true, "failed to connect sigFocusChange", false);
 
@@ -137,17 +137,39 @@ void PreviewTool::onDebugServiceUnavailable(const QString & name) {
 
 void PreviewTool::initCommands()
 {
-    m_commandManager.add("reflash", "Reflash preview interface.", [&](){
+    m_commandManager.add("help", "Commands description.", [&](){
+        INTERFACE_DEBUG("%s", m_commandManager.usage().c_str());
+    });
+
+    m_commandManager.add("refresh", "Reflash preview interface.", [&](){
         emit sigRerun();
         INTERFACE_DEBUG("");
     });
 
     m_commandManager.add<float>("zoom", "Display zoom factor.", [&](const float & val){
         emit sigZoom(val);
+        INTERFACE_DEBUG("");
     });
 
-    m_commandManager.add("help", "Commands description.", [&](){
-        INTERFACE_DEBUG("%s", m_commandManager.usage().c_str());
+    m_commandManager.add("fps", "Launch show Interface FPS Infomation.", [&](){
+        ProjectExplorer::Project::Instance()->setShowFPS(true);
+        INTERFACE_DEBUG("");
+    });
+
+    m_commandManager.add("s", "Stop show Interface FPS Infomation.", [&](){
+        ProjectExplorer::Project::Instance()->setShowFPS(false);
+        INTERFACE_DEBUG("");
+    });
+
+    m_commandManager.add<float>("t", "Reflash interval of FPS information. Minium interval value is 1 sec.", [&](const float & val){
+        if(val >= 0.99){
+            ProjectExplorer::Project::Instance()->setFpsInterval(val);
+        }
+        INTERFACE_DEBUG("");
+    });
+
+    m_commandManager.add("clc", "Clear Console.", [&](){
+        INTERFACE_DEBUG(FORMAT_CLEAR);
     });
 }
 

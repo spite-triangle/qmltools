@@ -13,7 +13,8 @@ namespace OwO
 std::unordered_map<size_t, std::string> Detail::g_mapTypeName = {
             {typeid(std::string).hash_code(), "string"},
             {typeid(int).hash_code(), "int"},
-            {typeid(float).hash_code(), "float"}
+            {typeid(float).hash_code(), "float"},
+            {typeid(bool).hash_code(), "bool"}
         };
 
 
@@ -169,7 +170,7 @@ try
     opt->run(args); 
 }catch(const std::exception & e)
 {
-    INTERFACE_DEBUG("%s",OwO::Format("An exception occurred: ", e.what(), " during runing " ,name).c_str());    
+    INTERFACE_DEBUG("%s","An exception occurred. More information see `help`.");    
 }
 
 

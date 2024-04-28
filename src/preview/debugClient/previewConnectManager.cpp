@@ -2,11 +2,15 @@
 
 #include "debugClient/previewConnectManager.h"
 
+#include <iomanip>
+
+#include <QDateTime>
 #include <QRegularExpression>
 #include <QRegularExpressionMatch>
 
 #include "common/utils.h"
 #include "common/previewLog.hpp"
+#include "common/previewProject.h"
 #include "previewConnectManager.h"
 
 PreviewConnectManager::PreviewConnectManager(QObject *parent)
@@ -31,6 +35,10 @@ void PreviewConnectManager::createClients()
                     this, &PreviewConnectManager::sigPathRequested);
     ASSERT_RETURN(bFlag == true, "failed to connect sigPathRequested");
 
+    bFlag = connect(m_pPreviewClient.data(), &PreviewClient::sigFpsInfo, 
+                    this, &PreviewConnectManager::onFpsInfo);
+    ASSERT_RETURN(bFlag == true, "failed to connect sigFpsInfo");
+
     bFlag = connect(m_pPreviewClient.data(), &PreviewClient::sigErrorMessage, 
                     this, &PreviewConnectManager::onErrorMessage);
     ASSERT_RETURN(bFlag == true, "failed to connect sigErrorMessage");
@@ -42,7 +50,6 @@ void PreviewConnectManager::createClients()
     bFlag = connect(m_pTranslationClient.data(), &TranslationClient::sigDebugServiceUnavailable, 
                     this, &PreviewConnectManager::onDebugServiceUnavailable);
     ASSERT_RETURN(bFlag == true, "failed to connect sigDebugServiceUnavailable");
-
 
 }
 
@@ -98,7 +105,7 @@ void PreviewConnectManager::onDebugServiceUnavailable(const QString &name)
 
 void PreviewConnectManager::onErrorMessage(const QString & strMsgText)
 {
-    static  QRegularExpression reg(R"(qrc(:\S+):-1)");
+    static  QRegularExpression reg(R"((\S+):-1)");
 
     QStringList msgs = strMsgText.split('\n');
     for (auto & msg : msgs)
@@ -110,6 +117,48 @@ void PreviewConnectManager::onErrorMessage(const QString & strMsgText)
         // 重新加载空文件
         QRegularExpressionMatch match = reg.match(line);
         if(match.hasMatch() != true) continue;
-        emit sigPathRequested(match.captured(1));
+
+        // 统一路径格式
+        QString path = match.captured(1); 
+        if(path.startsWith("qrc:/")){
+           path = path.mid(3); // 删除 qrc 留下 :/...
+        }
+        emit sigPathRequested(path);
     }
+}
+
+void PreviewConnectManager::onFpsInfo(const PreviewClient::FPS_INFO_S &stInfo)
+{
+    static QDateTime latest = QDateTime::currentDateTime();
+
+    std::string format;
+    auto project = ProjectExplorer::Project::Instance();
+    auto logger = OwO::Logger::Instance();
+
+    if(project->getShowFPS() == true){
+        // 第一次需要多换一行
+        if(logger->getNeedNewLine() == true){
+            format = OwO::Formats( "\n" FORMAT_CURSOR_UP(1) FORMAT_SPACE "\r    ", ARG_SPACE(40));
+            logger->setNeedNewLine(false);
+        }else{
+            format = OwO::Formats(FORMAT_CURSOR_UP(1) FORMAT_SPACE "\r    ", ARG_SPACE(40));
+        }
+    }else{
+        return;
+    }
+
+    QDateTime now = QDateTime::currentDateTime();
+    if(latest.msecsTo(now) < project->getFpsInterval() * 1000){
+        return; 
+    }
+    latest = now;
+
+    INTERFACE_DEBUG("%s", 
+                    OwO::Format(
+                        format,
+                        std::setw(20), std::left,OwO::Format(std::setw(13), std::left,"totalRender: ",stInfo.totalRender),
+                        std::setw(20), std::left,OwO::Format(std::setw(13), std::left,"Renders: ",stInfo.totalRender),
+                        std::setw(20), std::left,OwO::Format(std::setw(13), std::left,"totalSync: ",stInfo.totalRender),
+                        std::setw(20), std::left,OwO::Format(std::setw(13), std::left,"Syncs: ",stInfo.totalRender)
+                    ).c_str());
 }

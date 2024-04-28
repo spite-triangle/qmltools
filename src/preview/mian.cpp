@@ -14,18 +14,25 @@
 
 int main(int argc, char *argv[])
 {
+
     QCoreApplication app(argc, argv);
 
     auto project =  ProjectExplorer::Project::Instance();
+    project->setRunFolder(QCoreApplication::applicationDirPath());
+
+    // 解析参数
     int code = project->parserCommand(argc, argv);
     if(code != 0) return code;
+
+    // 初始化日志
+    OwO::Logger::Instance()->init( OwO::ToStdString(QDir(QCoreApplication::applicationDirPath() + "/log/run.log").absolutePath()), 
+                                project->getExportLog(), 
+                                project->getConsoleLog());
 
 #ifdef DOCT_TEST
     TestMain(argc, argv);
 #endif
 
-    // 初始化日志
-    OwO::Logger::Instance()->init( OwO::ToStdString(project->getRunFolder() + "/log/run.log"), project->getExportLog());
 
     // 工具
     PreviewTool* tool = new PreviewTool(&app);

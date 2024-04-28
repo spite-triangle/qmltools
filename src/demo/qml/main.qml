@@ -1,7 +1,7 @@
 import QtQuick 2.6
 import QtQuick.Controls 2.2
 import QtQuick.Window 2.2
-import "./test.js" as Ts
+import "./test1.js" as Ts
 
 Window {
     id: root
@@ -19,10 +19,10 @@ Window {
         }
 
         Go{
-            
+            color:"green"
         }
 
-        Hello1{
+        Hello{
             height: 20
         }
 
@@ -33,9 +33,9 @@ Window {
         }
 
         Button {
-            text: "Ok1221   2s11233"
+            text: "Ok 1 22 sd 1   3"
             onClicked: {
-                root.color = Qt.rgba(Math.random(), Math.random(), Math.random(), 1);
+                root.color = Qt.rgba(Math.random(), Math.random(), Math.random(), 1)
             }
         }
     }

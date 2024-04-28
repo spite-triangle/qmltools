@@ -32,6 +32,7 @@ public slots:
     void onClearCache();
     void onDebugServiceUnavailable(const QString & name);
     void onErrorMessage(const QString & name);
+    void onFpsInfo(const PreviewClient::FPS_INFO_S & stInfo);
 
 signals:
     void sigPathRequested(const QString & path);

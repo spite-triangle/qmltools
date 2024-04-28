@@ -1,10 +1,35 @@
 
 #include "common/utils.h"
-#include "utils.h"
 
+#include <io.h>
+#include <direct.h>
+
+
+#define PATH_DELIMITER '/'
 
 namespace OwO
 {
+    bool MakeDirectory(const std::string &directory)
+    {
+        using namespace std;
+        std::string folder_builder;
+        std::string sub;
+        sub.reserve(directory.size());
+        for (auto it = directory.begin(); it != directory.end(); ++it) {
+            const char c = *it;
+            sub.push_back(c);
+            if (c == PATH_DELIMITER || it == directory.end() - 1) {
+                folder_builder.append(sub);
+                if (0 != ::_access(folder_builder.c_str(), 0)) {
+                    if (0 != ::_mkdir(folder_builder.c_str())) {
+                        return false;
+                    }
+                }
+                sub.clear();
+            }
+        }
+        return true;
+    }
 
     extern std::string QStringToUtf8(const QString & str){
 

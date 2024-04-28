@@ -46,10 +46,10 @@ public:
     void addFile(const QString & strPath);
 
 public slots:
-    void onPathRequested(const QString & strPath);
+    bool onPathRequested(const QString & strPath);
 
     // m_watcher 监控的文件发生了改变
-    void onFileChanged(const QString & strPath, bool bCheck);
+    void onFileChanged(const QString & strPath);
 
 
 signals:

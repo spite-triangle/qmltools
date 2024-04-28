@@ -5,6 +5,8 @@
 #include <string>
 #include <sstream>
 #include <stdio.h>
+#include <thread>
+#include <chrono>
 
 #include <QString>
 
@@ -28,6 +30,15 @@
 #define BLOCK \
     for(bool __i=false ; __i != true; __i = true)
 
+#define BLOCK_TRY(n,msec) \
+    int __j = 0, __e=n; for(__j=0; __j < __e; (std::this_thread::sleep_for(std::chrono::microseconds(msec)),++__j)) 
+
+#define TRY_BREAK break
+#define TRY_CONTINUE continue
+
+#define TRY_FCK if(__j > __e) 
+#define TRY_OK if(__j < __e)
+
 namespace OwO
 {
     template<class ... Args>
@@ -47,6 +58,8 @@ namespace OwO
         sprintf(buff, format, args...);
         return std::string(buff);
     }
+
+    extern bool MakeDirectory(const std::string & directory);
 
     extern std::string QStringToUtf8(const QString & str);
     extern std::string QStringToLocal(const QString & str);
