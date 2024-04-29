@@ -1,8 +1,9 @@
 <RCC>
     <qresource prefix="/">
         <file>qml/main.qml</file>
-        <file>qml/test1.js</file>
         <file>qml/Hello.qml</file>
         <file>qml/Go.qml</file>
+        <file>js/test.js</file>
+        <file>js/test20.png</file>
     </qresource>
 </RCC>

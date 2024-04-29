@@ -74,6 +74,10 @@ bool PreviewTool::init() {
                     m_fileSystemManager, &FileSystemManger::onPathRequested);
     ASSERT_RETURN(bFlag == true, "failed to connect sigPathRequested", false);
 
+    bFlag = connect(m_connectManager, &PreviewConnectManager::sigErrorPathRequested, 
+                    m_fileSystemManager, &FileSystemManger::onErrorPathRequested);
+    ASSERT_RETURN(bFlag == true, "failed to connect sigErrorPathRequested", false);
+
     bFlag = connect(m_connectManager, &PreviewConnectManager::sigDebugServiceUnavailable, 
                     this, &PreviewTool::onDebugServiceUnavailable);
     ASSERT_RETURN(bFlag == true, "failed to connect sigDebugServiceUnavailable", false);

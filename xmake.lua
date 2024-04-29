@@ -17,8 +17,10 @@ target("demo")
 
    add_rules("qt.quickapp")
 
-   add_files("src/demo/main.cpp",
-             "src/demo/main.qrc")            
+   add_files("example/demo/main.cpp",
+             "example/demo/main.qrc",
+             "example/asset.qrc"
+             )            
 
    set_targetdir("bin/demo")
 

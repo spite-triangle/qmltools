@@ -123,7 +123,7 @@ void PreviewConnectManager::onErrorMessage(const QString & strMsgText)
         if(path.startsWith("qrc:/")){
            path = path.mid(3); // 删除 qrc 留下 :/...
         }
-        emit sigPathRequested(path);
+        emit sigErrorPathRequested(path);
     }
 }
 

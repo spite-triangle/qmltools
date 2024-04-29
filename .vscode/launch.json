@@ -30,9 +30,10 @@
             "args": [
                 "-s C:/Windows/Temp/preview_test/preview.socket",
                 "-v",
-                "--qrc=E:/workspace/qt_servitor/tools/src/demo/main.qrc",
-                "--project=E:/workspace/qt_servitor/tools/src/demo",
-                "--focus=E:/workspace/qt_servitor/tools/src/demo/qml/main.qml"
+                "--target=E:/workspace/qt_servitor/tools/bin/demo/demo.exe",
+                "--qrc=E:/workspace/qt_servitor/tools/example/demo/main.qrc,E:/workspace/qt_servitor/tools/example/asset.qrc",
+                "--project=E:/workspace/qt_servitor/tools/example/demo/",
+                "--focus=E:/workspace/qt_servitor/tools/example/demo/qml/main.qml"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/bin/preview/",

@@ -36,6 +36,7 @@ public slots:
 
 signals:
     void sigPathRequested(const QString & path);
+    void sigErrorPathRequested(const QString & path);
     void sigDebugServiceUnavailable(const QString & name);
 
 protected:

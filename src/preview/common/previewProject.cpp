@@ -31,15 +31,15 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
     app.set_version_flag("--version",OwO::ToStdString(m_setting.strVersion));
 
     app.add_flag("-v,--verbose", m_setting.bLog, "Print more debug information to `log/run.log`.");
-    app.add_flag("--quiet", m_setting.bConsoleLog, "Print console Message.")
-        ->default_val(false);
+    app.add_flag("--quiet", m_setting.bConsoleLog, "Print console Message.");
+    app.add_flag("--ignore", m_setting.bErrorReload, "Turn off refresh preview interface when error or empty file is reloaded successfully.\nIf file loading falls into death loop, you should need this.");
 
     app.add_option("-z,--zoom", m_setting.fZoom, "Display zoom factor.")
         ->default_val(1.0)
         ->check(CLI::Range(0.2,10.0));
 
     app.add_option("-i,--interval",m_setting.uUpdateInterval,"Interval (ms) to update file change.")
-        ->default_val(2000)
+        ->default_val(1000)
         ->check(CLI::Range(1000,10000));
 
     app.add_option_function<std::string>("-t,--target", 
@@ -84,8 +84,8 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
                 m_setting.setQrcFile.insert(std::move(strFile));
             }
         },
-        "*.qrc file path. Multiple files are separated by `;`.")
-        ->delimiter(';');
+        "*.qrc file path. Multiple files are separated by `,`.")
+        ->delimiter(',');
 
     app.add_option_function<std::vector<std::string>>("--search",
         [&](const std::vector<std::string> & vals){
@@ -95,8 +95,8 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
                 m_setting.setQrcFile.insert(std::move(strFile));
             }
         },            
-        "Extend asset search folder. Multiple folders are separated by `;`.")
-        ->delimiter(';');
+        "Extend asset search folder. Multiple folders are separated by `,`.")
+        ->delimiter(',');
 
     app.add_option_function<std::string>("--limit",
         [&](const std::string & val){

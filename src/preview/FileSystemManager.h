@@ -47,6 +47,7 @@ public:
 
 public slots:
     bool onPathRequested(const QString & strPath);
+    void onErrorPathRequested(const QString & strPath);
 
     // m_watcher 监控的文件发生了改变
     void onFileChanged(const QString & strPath);

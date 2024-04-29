@@ -1,6 +1,8 @@
 
 #include "FileSystemManager.h"
 
+#include <QSet>
+#include <QUrl>
 #include <QMap>
 #include <QFile>
 #include <QString>
@@ -113,10 +115,14 @@ void FileSystemManger::addFile(const QString &strPath)
     }
 }
 
-bool FileSystemManger::onPathRequested(const QString & strPath) {
-    LOG_DEBUG("request %s", OwO::QStringToUtf8(strPath).c_str());
+bool FileSystemManger::onPathRequested(const QString & request) {
 
+    // 转换网络路径例如 %5c 转为 /
+    QString strPath = QUrl::fromPercentEncoding(request.toUtf8());
+
+    LOG_DEBUG("request path %s", OwO::QStringToUtf8(strPath).c_str());
     auto project = Project::Instance();
+    bool bOk = false;
 
     auto fileHandler = [&](const Utils::FilePath &filePath, int confidence){
         if(confidence != strPath.length()){
@@ -140,7 +146,8 @@ bool FileSystemManger::onPathRequested(const QString & strPath) {
         } 
 
         emit sigAnnounceFile(strPath, contents);
-        LOG_DEBUG("import %s", OwO::QStringToUtf8(strPath).c_str());
+        bOk = true;
+        LOG_DEBUG("Successfully import %s", OwO::QStringToUtf8(strPath).c_str());
     };
 
     auto directoryHandler = [&](const QStringList &entries, int confidence){
@@ -149,17 +156,20 @@ bool FileSystemManger::onPathRequested(const QString & strPath) {
             LOG_DEBUG("failed to import %s", OwO::QStringToUtf8(strPath).c_str());
         }else{
             emit sigAnnounceDirectory(strPath, entries);
-            LOG_DEBUG("import %s", OwO::QStringToUtf8(strPath).c_str());
+            bOk = true;
+            LOG_DEBUG("Successfully import %s", OwO::QStringToUtf8(strPath).c_str());
         }
     };
 
     // 通过 qrc 解析器查找 qrc路径对应的文件，没有文件夹
-    bool bFlag = findSourceByParser(strPath, fileHandler, directoryHandler);
-    if(bFlag == true) return true;
+    if(findSourceByParser(strPath, fileHandler, directoryHandler)){
+        return bOk;
+    }
 
     // 解析器不能查找的内容，由 m_pFinder 来查找
-    bFlag = m_pFinder->findFileOrDirectory(FilePath::fromString(strPath), fileHandler, directoryHandler);
-    if(bFlag == true) return true;
+    if(m_pFinder->findFileOrDirectory(FilePath::fromString(strPath), fileHandler, directoryHandler)){
+        return bOk;
+    }
 
     emit sigAnnounceError(strPath);
     return false; 
@@ -193,6 +203,15 @@ QByteArray FileSystemManger::loadFile(const QString &strPath, bool &bRes)
     return content;
 }
 
+void FileSystemManger::onErrorPathRequested(const QString &strPath)
+{
+    if(onPathRequested(strPath) == false
+     || ProjectExplorer::Project::Instance()->getErrorReload() == false){
+        return;
+    }
+
+    emit sigRerun();
+}
 
 void FileSystemManger::onFileChanged(const QString &strPath)
 {
@@ -299,23 +318,25 @@ bool FileSystemManger::findSourceByParser(const QString &strQrc, FileHandler fil
         strQrcUrl += "/";
     }
 
-    QMap<QString, QStringList> res;
+    QSet<QString> entries;
     for (auto & qrc : qrcFiles)
     {
+        QMap<QString, QStringList> res;
+
         QrcParser::ConstPtr parser = m_qrcs.parsedPath(qrc);
         if(parser == nullptr) continue;
 
         parser->collectFilesInPath(strQrcUrl, &res, true , &lang);
         if(res.size() <= 0) continue;
 
-        QStringList entries;
         for (auto & key : res.keys())
         {
             if(key.isEmpty()) continue;
-            entries.append(key);
+            entries.insert(key);
         }
-
-        directoryHandler(entries, strQrc.length());
+    }
+    if(entries.size() > 0){
+        directoryHandler(QStringList(entries.begin(), entries.end()), strQrc.length());
         return true;
     }
     return false;

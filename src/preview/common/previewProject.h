@@ -34,9 +34,10 @@ public:
         QSet<QString> setExtendSearchFolder; // 其他额外存在资源的文件夹
         QLocale language; 
         float fZoom;
-        bool bConsoleLog; // 控制台打印
+        float nFpsIntreval = 1.0;
+        bool bErrorReload = true;
+        bool bConsoleLog = true; // 控制台打印
         bool bLog = false;
-        float  nFpsIntreval = 1.0;
         bool bShowFps = false;
     };
     
@@ -60,9 +61,10 @@ public:
     FUNC_SET_GET(QString, m_setting.strHost, Host);
     FUNC_SET_GET(size_t, m_setting.uport, Port);
     FUNC_SET_GET(float, m_setting.fZoom, Zoom);
-    FUNC_SET_GET(bool, m_setting.bShowFps, ShowFPS);
     FUNC_SET_GET(float, m_setting.nFpsIntreval, FpsInterval);
+    FUNC_SET_GET(bool, m_setting.bErrorReload, ErrorReload);
     FUNC_SET_GET(bool, m_setting.bConsoleLog, ConsoleLog);
+    FUNC_SET_GET(bool, m_setting.bShowFps, ShowFPS);
     FUNC_SET_GET(size_t, m_setting.uUpdateInterval, UpdateInterval);
     FUNC_SET_GET(bool, m_setting.bLog, ExportLog);
     FUNC_GET(QSet<QString>, m_setting.setQrcFile, QrcFiles);

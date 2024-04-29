@@ -1,9 +1,8 @@
 import QtQuick 2.6
 import QtQuick.Controls 2.2
-import QtQuick.Window 2.2
-import "./test1.js" as Ts
+import "../js/test.js" as Ts
 
-Window {
+Frame1 {
     id: root
     visible: true
     width: 640
@@ -12,7 +11,7 @@ Window {
 
     Row{
         Text{
-            text: "test"
+            text: "te st"
             Component.onCompleted:{
                 Ts.test();
             }
@@ -30,6 +29,13 @@ Window {
             width: 120
             height: 200
             color: "red"
+
+        }
+
+        Image{
+            width: 100
+            height: 200
+            source: "qrc:/js/test20.png"
         }
 
         Button {
@@ -39,5 +45,7 @@ Window {
             }
         }
     }
+
+
 }
 
