@@ -1,5 +1,6 @@
 build
 .xmake
-bin
-include
-lib
+bin/**/*.exe
+bin/**/*.pdb
+bin/**/*.ilk
+bin/**/*.log

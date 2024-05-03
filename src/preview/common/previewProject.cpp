@@ -44,30 +44,28 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
 
     app.add_option_function<std::string>("-t,--target", 
         [&](const std::string & val){
-            m_setting.strTargetFile = OwO::Utf8ToQString(val).trimmed();
+            m_setting.strTargetFile = formatPath(val);
 
-            QFileInfo file(m_setting.strTargetFile);
-            if(file.exists() == false || file.isExecutable() == false){
-                throw CLI::ValidationError("target path isn't a valid executable file.");
-            }
+            checkPath(m_setting.strTargetFile, "target",CHECK_TYPE_E::TYPE_EXCUTABLE | CHECK_TYPE_E::TYPE_EXIST);
         },
         "File path. The target program will be launched for live preview.");
 
     app.add_option_function<std::string>("--cwd",
         [&](const std::string & val){
-            m_setting.strTargetWorkFolder = OwO::Utf8ToQString(val).trimmed();
+            m_setting.strTargetWorkFolder = formatPath(val);
+            checkPath(m_setting.strTargetWorkFolder,"cwd" ,CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
         }, 
         "The workspace folder of target program.");
 
     app.add_option_function<std::string>("-s,--socket", 
         [&](const std::string & val){
-            m_setting.strSocketFile = OwO::Utf8ToQString(val).trimmed();
+            m_setting.strSocketFile = formatPath(val);
         }, 
         "The socket file of QML debug server.");
 
     app.add_option_function<std::string>("-h,--host",
         [&](const std::string & val){
-            m_setting.strHost = OwO::Utf8ToQString(val).trimmed();
+            m_setting.strHost = formatPath(val);
         },             
         "The host of QML debug server.")
         ->default_val("127.0.0.1");
@@ -79,8 +77,8 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
     app.add_option_function<std::vector<std::string>>("--qrc",
         [&](const std::vector<std::string> & vals){
             for(auto & val :vals){
-                QString strFile = OwO::Utf8ToQString(val).trimmed();
-                if(QFileInfo(strFile).exists() == false) continue; 
+                QString strFile = formatPath(val);
+                checkPath(strFile,"qrc", CHECK_TYPE_E::TYPE_FILE | CHECK_TYPE_E::TYPE_EXIST);
                 m_setting.setQrcFile.insert(std::move(strFile));
             }
         },
@@ -90,41 +88,32 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
     app.add_option_function<std::vector<std::string>>("--search",
         [&](const std::vector<std::string> & vals){
             for(auto & val :vals){
-                QString strFile = OwO::Utf8ToQString(val).trimmed();
-                if(QDir(strFile).exists() == false) continue;
+                QString strFile = formatPath(val);
+                checkPath(strFile, "search",CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
                 m_setting.setQrcFile.insert(std::move(strFile));
             }
         },            
         "Extend asset search folder. Multiple folders are separated by `,`.")
         ->delimiter(',');
 
-    app.add_option_function<std::string>("--limit",
-        [&](const std::string & val){
-            m_setting.strLimitedFolder = OwO::Utf8ToQString(val).trimmed();
-            return true;
-        }, 
-        "Limit folder to search asset.");
-
     auto group = app.add_option_group("Required", "These options have to configure.");
 
     group->add_option_function<std::string>("--project",
         [&](const std::string & val){
-            m_setting.strPojectFolder = OwO::Utf8ToQString(val).trimmed();
+            m_setting.strPojectFolder = formatPath(val);
             QFileInfo dir(m_setting.strPojectFolder);
-            if(dir.exists() == false || dir.isDir() == false){
-                throw CLI::ValidationError("project folder isn't a valid folder path");
-            }
+            checkPath(m_setting.strPojectFolder,"project" ,CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
         },
         "Project folder path.")
         ->required(true);
 
     group->add_option_function<std::string>("--focus",
         [&](const std::string & val){
-            m_setting.strFocusLocalQml = OwO::Utf8ToQString(val).trimmed();
+            m_setting.strFocusLocalQml = formatPath(val);
 
             QFileInfo file(m_setting.strFocusLocalQml);
             if(file.exists() == false && file.suffix() != "qml"){
-                throw CLI::ValidationError("focus file isn't a valid qml file");
+                throw CLI::ValidationError("focus: focus file isn't a valid qml file.");
             }
         },
         "File path. The primary QML file will be previewed.")
@@ -149,4 +138,69 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
     }  
 
     return 0;
+}
+
+QString ProjectExplorer::Project::parentFolder(const QString &strPath)
+{
+    auto src = QFileInfo(strPath.trimmed()).canonicalFilePath();
+
+    auto handler = [&](const QString & folder){
+        if(folder.isEmpty() == false && src.startsWith(folder, Qt::CaseInsensitive)){
+            return true;
+        }
+        return false;
+    };
+
+    // 项目文件夹
+    if(handler(m_setting.strPojectFolder)){
+        return m_setting.strPojectFolder;
+    }
+
+    // 工作目录
+    if(handler(m_setting.strTargetWorkFolder)){
+        return m_setting.strTargetWorkFolder;
+    }
+
+    // 其他文件夹
+    for (auto & strFolder : m_setting.setExtendSearchFolder)
+    {
+        if(handler(strFolder)){
+            return strFolder;
+        }
+    }
+
+    return QString();
+}
+
+void ProjectExplorer::Project::checkPath(const QString &strPath, const std::string & name,int nType)
+{
+    QFileInfo file(strPath);
+    std::string error;
+
+    BLOCK{
+        if(nType & CHECK_TYPE_E::TYPE_EXIST && file.exists( ) == false){
+            error = "Path does not exist.";
+            break;
+        }
+        if(nType & CHECK_TYPE_E::TYPE_EXCUTABLE && file.isExecutable() == false){
+            error = "File isn't a valid executable program.";
+            break;
+        }
+        if(nType & CHECK_TYPE_E::TYPE_FILE && file.isFile() == false){
+            error = "Path isn't a valid file path.";
+            break;
+        }
+        if(nType & CHECK_TYPE_E::TYPE_FOLDER && file.isDir() == false){
+            error = "Path isn't a valid folder path.";
+            break;
+        }
+        return;
+    }
+
+    throw CLI::ValidationError(name ,error + " Check your settings and folder separator is `\\` or `/`.");
+}
+
+QString ProjectExplorer::Project::formatPath(const std::string &str)
+{
+    return QFileInfo(OwO::Utf8ToQString(str).trimmed()).canonicalFilePath();
 }

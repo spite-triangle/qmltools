@@ -33,7 +33,11 @@ target("preview")
     add_includedirs("src/preview/","src/")
 
     -- 库
-    add_linkdirs("lib/qtcreator")
+    if(is_mode("debug")) then
+        add_linkdirs("lib/qtcreator/debug_win/")
+    else 
+        add_linkdirs("lib/qtcreator/release_win/")
+    end
     add_links("QmlJS","Utils","LanguageUtils","QmlDebug")
 
     -- 文件
@@ -44,7 +48,11 @@ target("preview")
             "src/preview/*.cpp",
             "src/common/*.cpp")
 
-    set_targetdir("bin/preview")
+    if(is_mode("debug")) then
+        set_targetdir("bin/debug_win/preview")
+    else
+        set_targetdir("bin/release_win/preview")
+    end 
 
 target("qmllsp")
     add_rules("qt.console")

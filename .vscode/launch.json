@@ -23,24 +23,48 @@
             "visualizerFile": "E:\\workspace\\qml\\QtCreator\\.vscode\\qt6.natvis.xml"
         },
         {
-            "name": "(Windows) Preview",
+            "name": "(Windows) Preview debug",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/preview/preview.exe",
+            "program": "${workspaceFolder}/bin/debug_win/preview/preview.exe",
             "args": [
                 "-s C:/Windows/Temp/preview_test/preview.socket",
                 "-v",
                 "--target=E:/workspace/qt_servitor/tools/bin/demo/demo.exe",
                 "--qrc=E:/workspace/qt_servitor/tools/example/demo/main.qrc,E:/workspace/qt_servitor/tools/example/asset.qrc",
                 "--project=E:/workspace/qt_servitor/tools/example/demo/",
-                "--focus=E:/workspace/qt_servitor/tools/example/demo/qml/main.qml"
+                "--focus=E:/workspace/qt_servitor/tools/example/demo/main.qml"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/bin/preview/",
+            "cwd": "${workspaceFolder}/bin/debug_win/preview/",
             "environment": [
                 {
                     "name": "path",
-                    "value": "D:/ProgramData/Qt6/6.7.0/msvc2019_64/bin;E:/workspace/qml/qt-creator/build/bin/Debug"
+                    "value": "D:/ProgramData/Qt6/6.7.0/msvc2019_64/bin"
+                }
+            ],
+            "console": "integratedTerminal",
+            "visualizerFile": "E:\\workspace\\qml\\QtCreator\\.vscode\\qt6.natvis.xml"
+        },
+        {
+            "name": "(Windows) Preview release",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/release_win/preview/preview.exe",
+            "args": [
+                "-s C:/Windows/Temp/preview_test/preview.socket",
+                "-v",
+                "--target=E:/workspace/qt_servitor/tools/bin/demo/demo.exe",
+                "--qrc=E:/workspace/qt_servitor/tools/example/demo/main.qrc,E:/workspace/qt_servitor/tools/example/asset.qrc",
+                "--project=E:/workspace/qt_servitor/tools/example/demo/",
+                "--focus=E:/workspace/qt_servitor/tools/example/demo/main.qml"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/bin/release_win/preview/",
+            "environment": [
+                {
+                    "name": "path",
+                    "value": "D:/ProgramData/Qt6/6.7.0/msvc2019_64/bin"
                 }
             ],
             "console": "integratedTerminal",

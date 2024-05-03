@@ -1,6 +1,7 @@
 #ifndef PREVIEWPROJECT_H
 #define PREVIEWPROJECT_H
 
+#include <QUrl>
 #include <QSet>
 #include <QList>
 #include <QObject>
@@ -15,14 +16,21 @@ namespace ProjectExplorer
 class Project : public QObject, public Singleton<Project>{
     Q_OBJECT
 public:
+    enum CHECK_TYPE_E : int
+    {
+        TYPE_EXIST = 1,
+        TYPE_EXCUTABLE = 2,
+        TYPE_FILE = 4,
+        TYPE_FOLDER = 8
+    };
+
     struct PROJECT_SETTING_S
     {
         QString strName;  // 项目名
         QString strVersion; // 版本
         QString strFocusLocalQml; // 在线预览的入口 qml 文件本地路径
-        QString strFocusQrcQml; // 在线预览的入口 qml 文件 qrc 路径，qml engine 能识别的路径
+        QUrl strFocusQrcQml; // 在线预览的入口 qml 文件 qrc 路径，qml engine 能识别的路径
         QString strPojectFolder; // 项目文件夹
-        QString strLimitedFolder; // 只在指定的文件夹下查找需要的资源
         QString strTargetFile;
         QString strTargetWorkFolder; // 目标程序工作目录
         QString strRunFolder; // preview 所在目录
@@ -51,9 +59,8 @@ public:
     FUNC_GET(QString, m_setting.strVersion, Version);
     FUNC_SET_GET(QLocale, m_setting.language, Language);
     FUNC_SET_GET(QString, m_setting.strFocusLocalQml, FocusLocalQml);
-    FUNC_SET_GET(QString, m_setting.strFocusQrcQml, FocusQrcQml);
+    FUNC_SET_GET(QUrl, m_setting.strFocusQrcQml, FocusQrcQml);
     FUNC_SET_GET(QString, m_setting.strPojectFolder, ProjectFolder);
-    FUNC_SET_GET(QString, m_setting.strLimitedFolder, LimitedFolder);
     FUNC_SET_GET(QString, m_setting.strTargetWorkFolder, TargetWorkFolder);
     FUNC_SET_GET(QString, m_setting.strRunFolder, RunFolder);
     FUNC_SET_GET(QString, m_setting.strTargetFile, Target);
@@ -75,6 +82,13 @@ public:
 
     /* 解析命令行 */
     int parserCommand(int argc, char *argv[]);
+
+    /* 从 projectFolder 、targetWorkFolder、extendSearchFolder 中查询父级目录 */
+    QString parentFolder(const QString & strPath); 
+private:
+    void checkPath(const QString & strPath, const std::string & name ,int nType);
+
+    QString formatPath(const std::string & str);
 
 private:
     PROJECT_SETTING_S m_setting;

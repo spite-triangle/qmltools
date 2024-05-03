@@ -69,6 +69,9 @@ private:
     /* 根据 qrc 路径查找本地路径 */
     bool findSourceByParser(const QString & strQrc, FileHandler fileHandler, DirectoryHandler directoryHandler);
 
+    /* 根据绝对路径查找 */
+    bool findSourceByAbsolutePath(const QString & strPath, FileHandler fileHandler, DirectoryHandler directoryHandler);
+
     FILE_TYPE_E inspectFileType(const QString & strSource);
     
     bool checkFileValid(const QString & strSource, const QByteArray & content, const FILE_TYPE_E & enType);

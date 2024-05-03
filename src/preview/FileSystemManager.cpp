@@ -67,7 +67,6 @@ bool FileSystemManger::init()
     auto project = Project::Instance();
     m_pFinder = std::make_shared<Utils::FileInProjectFinder>();
     m_pFinder->setProjectDirectory(FilePath::fromString(project->getProjectFolder()));
-    m_pFinder->setSysroot(FilePath::fromString(project->getLimitedFolder()));
 
     FilePaths paths;
     for (auto & path : project->getExtendSearchFolder())
@@ -103,9 +102,21 @@ void FileSystemManger::updateFocusQml()
     /* 更新主 qml 路径 */    
     if(project->getFocusLocalQml().isEmpty() == false){
         auto qrcUrl = findQrcUrlByParser(project->getFocusLocalQml());
-        project->setFocusQrcQml(qrcUrl);
+
+        // 生成 url
+        if(qrcUrl.startsWith(":")){
+            project->setFocusQrcQml("qrc" + qrcUrl);
+        }else{
+            project->setFocusQrcQml(QUrl::fromLocalFile(qrcUrl));
+        }
+
         LOG_DEBUG("focus qml file %s", OwO::QStringToUtf8(qrcUrl).c_str());
     }
+
+    // 添加监控
+    if(m_watcher.watchesFile(project->getFocusLocalQml()) == false){
+        m_watcher.addFile(project->getFocusLocalQml(), FileSystemWatcher::WatchModifiedDate);
+    } 
 }
 
 void FileSystemManger::addFile(const QString &strPath)
@@ -161,12 +172,17 @@ bool FileSystemManger::onPathRequested(const QString & request) {
         }
     };
 
+    // 绝对路径查找
+    if(findSourceByAbsolutePath(strPath, fileHandler, directoryHandler)){
+        return bOk;
+    }
+
     // 通过 qrc 解析器查找 qrc路径对应的文件，没有文件夹
     if(findSourceByParser(strPath, fileHandler, directoryHandler)){
         return bOk;
     }
 
-    // 解析器不能查找的内容，由 m_pFinder 来查找
+    // 绝对路径和解析器不能查找的内容，由 m_pFinder 来查找
     if(m_pFinder->findFileOrDirectory(FilePath::fromString(strPath), fileHandler, directoryHandler)){
         return bOk;
     }
@@ -184,9 +200,8 @@ QByteArray FileSystemManger::loadFile(const QString &strPath, bool &bRes)
 
     ASSERT_RETURN(file.exists() == true, "file is not exist", bRes = false, content);
 
-
     // NOTE - Qfile 读取文件有概率会为空
-    BLOCK_TRY(3,0){
+    BLOCK_TRY(4,0){
         ASSERT_RETURN(file.open(QIODevice::ReadOnly) == true, "failed to open file", bRes = false, content);
         content = file.readAll();
         if(content.isEmpty() == false) TRY_BREAK;
@@ -403,7 +418,27 @@ void FileSystemManger::printErrorMessage(const QString & file,const QList<QmlJS:
     }
 }
 
+bool FileSystemManger::findSourceByAbsolutePath(const QString &strPath, FileHandler fileHandler, DirectoryHandler directoryHandler)
+{
+    // 过滤 qrc 路径
+    if(strPath.startsWith(":") == true) return false;
 
+    // 存在性
+    QFileInfo info(strPath);
+    if(info.exists() == false) return false;
+
+    // 当前文件是否在允许查找的文件夹内
+    auto project = Project::Instance();
+    if(project->parentFolder(strPath).isEmpty()) return false;
+
+    // 文件和文件夹的处理
+    if(info.isFile() == true){
+        fileHandler(Utils::FilePath::fromFileInfo(info), strPath.length()); 
+    }else{
+        directoryHandler(QDir(strPath).entryList(), strPath.length());
+    }
+    return true;
+}
 
 FileSystemManger::FILE_TYPE_E FileSystemManger::inspectFileType(const QString &strSource)
 {

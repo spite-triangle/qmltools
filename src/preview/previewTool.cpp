@@ -175,11 +175,15 @@ void PreviewTool::initCommands()
     m_commandManager.add("clc", "Clear Console.", [&](){
         INTERFACE_DEBUG(FORMAT_CLEAR);
     });
+
+    INTERFACE_DEBUG("%s", m_commandManager.usage().c_str());
 }
 
 void PreviewTool::runInterface()
 {
     initCommands();
+
+
 
     std::string in;
     while (std::getline(std::cin, in))

@@ -1,0 +1,30 @@
+// Copyright (C) 2023 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+
+#pragma once
+
+#include <QtGlobal>
+
+#if defined(NANOTRACE_LIBRARY)
+#define NANOTRACE_EXPORT Q_DECL_EXPORT
+#  ifdef Q_OS_WINDOWS
+#    define NANOTRACE_EXPORT_EXTERN_TEMPLATE
+#  else
+#    define NANOTRACE_EXPORT_EXTERN_TEMPLATE Q_DECL_EXPORT
+#  endif
+#  ifdef Q_OS_WINDOWS
+#    define NANOTRACE_EXPORT_TEMPLATE Q_DECL_EXPORT
+#  else
+#    define NANOTRACE_EXPORT_TEMPLATE
+#  endif
+#elif defined(NANOTRACE_STATIC_LIBRARY)
+#  define NANOTRACE_EXPORT
+#  define NANOTRACE_EXPORT_EXTERN_TEMPLATE
+#  define NANOTRACE_EXPORT_TEMPLATE
+#else
+#  define NANOTRACE_EXPORT Q_DECL_IMPORT
+#  define NANOTRACE_EXPORT_EXTERN_TEMPLATE
+#  define NANOTRACE_EXPORT_TEMPLATE
+#endif
+
+#define NANOTRACESHARED_EXPORT NANOTRACE_EXPORT
