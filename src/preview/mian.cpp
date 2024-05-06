@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     if(code != 0) return code;
 
     // 初始化日志
-    OwO::Logger::Instance()->init( OwO::ToStdString(QDir(QCoreApplication::applicationDirPath() + "/log/run.log").absolutePath()), 
+    OwO::Logger::Instance()->init( OwO::ToStdString(QDir(QCoreApplication::applicationDirPath() + "/log/preview.log").absolutePath()), 
                                 project->getExportLog(), 
                                 project->getConsoleLog());
 

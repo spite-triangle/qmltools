@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     
-    QUrl url = QUrl("qrc:/qml/main.qml"); // qrc 配置
+    QUrl url = QUrl("qrc:/main.qml"); // qrc 配置
     // url = QUrl::fromLocalFile("E:/testspace/qml/src/main.qml"); // 本地绝对路径配置
     engine.load(url);
 

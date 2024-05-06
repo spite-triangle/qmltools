@@ -26,17 +26,17 @@
             "name": "(Windows) Preview debug",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/debug_win/preview/preview.exe",
+            "program": "${workspaceFolder}/bin/debug_win/preview.exe",
             "args": [
                 "-s C:/Windows/Temp/preview_test/preview.socket",
                 "-v",
-                "--target=E:/workspace/qt_servitor/tools/bin/demo/demo.exe",
-                "--qrc=E:/workspace/qt_servitor/tools/example/demo/main.qrc,E:/workspace/qt_servitor/tools/example/asset.qrc",
+                // "--target=E:/workspace/qt_servitor/tools/bin/demo/demo.exe",
+                "--qrc=E:/workspace/qt_servitor/tools/example/demo/main.qrc",
                 "--project=E:/workspace/qt_servitor/tools/example/demo/",
                 "--focus=E:/workspace/qt_servitor/tools/example/demo/main.qml"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/bin/debug_win/preview/",
+            "cwd": "${workspaceFolder}/bin/debug_win/",
             "environment": [
                 {
                     "name": "path",
@@ -50,17 +50,17 @@
             "name": "(Windows) Preview release",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/release_win/preview/preview.exe",
+            "program": "${workspaceFolder}/bin/release_win/preview.exe",
             "args": [
                 "-s C:/Windows/Temp/preview_test/preview.socket",
                 "-v",
-                "--target=E:/workspace/qt_servitor/tools/bin/demo/demo.exe",
-                "--qrc=E:/workspace/qt_servitor/tools/example/demo/main.qrc,E:/workspace/qt_servitor/tools/example/asset.qrc",
+                // "--target=E:/workspace/qt_servitor/tools/bin/demo/demo.exe",
+                "--qrc=E:/workspace/qt_servitor/tools/example/demo/main.qrc",
                 "--project=E:/workspace/qt_servitor/tools/example/demo/",
                 "--focus=E:/workspace/qt_servitor/tools/example/demo/main.qml"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/bin/release_win/preview/",
+            "cwd": "${workspaceFolder}/bin/release_win/",
             "environment": [
                 {
                     "name": "path",

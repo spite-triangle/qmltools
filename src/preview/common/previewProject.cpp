@@ -65,7 +65,7 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
 
     app.add_option_function<std::string>("-h,--host",
         [&](const std::string & val){
-            m_setting.strHost = formatPath(val);
+            m_setting.strHost = OwO::ToQString(val);
         },             
         "The host of QML debug server.")
         ->default_val("127.0.0.1");
@@ -202,5 +202,5 @@ void ProjectExplorer::Project::checkPath(const QString &strPath, const std::stri
 
 QString ProjectExplorer::Project::formatPath(const std::string &str)
 {
-    return QFileInfo(OwO::Utf8ToQString(str).trimmed()).canonicalFilePath();
+    return QFileInfo(OwO::Utf8ToQString(str).trimmed()).absoluteFilePath();
 }

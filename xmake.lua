@@ -49,9 +49,9 @@ target("preview")
             "src/common/*.cpp")
 
     if(is_mode("debug")) then
-        set_targetdir("bin/debug_win/preview")
+        set_targetdir("bin/debug_win/")
     else
-        set_targetdir("bin/release_win/preview")
+        set_targetdir("bin/release_win/")
     end 
 
 target("qmllsp")
