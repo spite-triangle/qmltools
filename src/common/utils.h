@@ -26,6 +26,11 @@
     FUNC_SET(type,name,fcn)\
     FUNC_GET(type,name, fcn)
 
+#define RAII_DEFER(code) \
+    std::shared_ptr<void> __raii(nullptr, [&](void*){\
+        code;\
+    })
+    // 
 
 #define BLOCK \
     for(bool __i=false ; __i != true; __i = true)

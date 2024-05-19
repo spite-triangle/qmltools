@@ -61,11 +61,7 @@
     }
     // 
 
-#define RAII_DEFER(code) \
-    std::shared_ptr<void> __raii(nullptr, [&](void*){\
-        code;\
-    })
-    // 
+
 
 namespace OwO
 {

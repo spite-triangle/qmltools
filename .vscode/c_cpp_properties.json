@@ -11,7 +11,8 @@
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE",
-                "QT_CREATOR"
+                "QT_CREATOR",
+                "PROTOBUF_CONSTEXPR"
             ],
             "compilerPath": "D:\\Program Files\\mingw-w64\\x86_64-8.1.0\\bin\\gcc.exe",
             "cStandard": "c17",

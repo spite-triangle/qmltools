@@ -95,7 +95,13 @@
         "hash_map": "cpp",
         "qhash": "cpp",
         "xmemory": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "qdockwidget": "cpp",
+        "qlocalsocket": "cpp",
+        "qlocalserver": "cpp",
+        "qtcpserver": "cpp",
+        "qtcpsocket": "cpp",
+        "*.inc": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "qt.installPath": "D:/ProgramData/Qt6"

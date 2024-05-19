@@ -30,7 +30,7 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
     app.set_help_flag("-?,--help", "Print this help message and exit.");
     app.set_version_flag("--version",OwO::ToStdString(m_setting.strVersion));
 
-    app.add_flag("-v,--verbose", m_setting.bLog, "Print more debug information to `log/run.log`.");
+    app.add_flag("-v,--verbose", m_setting.bLog, "Print more debug information to `log/preview.log`.");
     app.add_flag("--quiet", m_setting.bConsoleLog, "Print console Message.");
     app.add_flag("--ignore", m_setting.bErrorReload, "Turn off refresh preview interface when error or empty file is reloaded successfully.\nIf file loading falls into death loop, you should need this.");
 

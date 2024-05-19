@@ -4,7 +4,33 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
+        {
+            "name": "(Windows) Attach",
+            "type": "cppvsdbg",
+            "request": "attach",
+            "visualizerFile": "E:\\workspace\\qml\\QtCreator\\.vscode\\qt6.natvis.xml"
+        },
+        {
+            "name": "(Windows) Launch qmllsp",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/debug_win/qmllsp.exe",
+            "args": [
+                "-s server.socket",
+                "-p 12345",
+                "-v"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/bin/debug_win/",
+            "environment": [
+                {
+                    "name": "path",
+                    "value": "D:\\ProgramData\\Qt6\\6.7.0\\msvc2019_64\\bin"
+                }
+            ],
+            "console": "integratedTerminal",
+            "visualizerFile": "E:\\workspace\\qml\\QtCreator\\.vscode\\qt6.natvis.xml"
+        },
         {
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
@@ -30,7 +56,6 @@
             "args": [
                 "-s C:/Windows/Temp/preview_test/preview.socket",
                 "-v",
-                // "--target=E:/workspace/qt_servitor/tools/bin/demo/demo.exe",
                 "--qrc=E:/workspace/qt_servitor/tools/example/demo/main.qrc",
                 "--project=E:/workspace/qt_servitor/tools/example/demo/",
                 "--focus=E:/workspace/qt_servitor/tools/example/demo/main.qml"
@@ -54,7 +79,6 @@
             "args": [
                 "-s C:/Windows/Temp/preview_test/preview.socket",
                 "-v",
-                // "--target=E:/workspace/qt_servitor/tools/bin/demo/demo.exe",
                 "--qrc=E:/workspace/qt_servitor/tools/example/demo/main.qrc",
                 "--project=E:/workspace/qt_servitor/tools/example/demo/",
                 "--focus=E:/workspace/qt_servitor/tools/example/demo/main.qml"
