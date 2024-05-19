@@ -4,3 +4,5 @@ bin/**/*.exe
 bin/**/*.pdb
 bin/**/*.ilk
 bin/**/*.log
+bin/**/*.dll
+lib/**/*.lib
