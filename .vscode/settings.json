@@ -101,8 +101,9 @@
         "qlocalserver": "cpp",
         "qtcpserver": "cpp",
         "qtcpsocket": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "qmutexlocker": "cpp",
+        "qjsonvalueref": "cpp"
     },
-    "C_Cpp.errorSquiggles": "enabled",
     "qt.installPath": "D:/ProgramData/Qt6"
 }

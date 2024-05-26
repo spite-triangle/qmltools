@@ -202,5 +202,5 @@ void ProjectExplorer::Project::checkPath(const QString &strPath, const std::stri
 
 QString ProjectExplorer::Project::formatPath(const std::string &str)
 {
-    return QFileInfo(OwO::Utf8ToQString(str).trimmed()).absoluteFilePath();
+    return QFileInfo(OwO::ToQString(str).trimmed()).absoluteFilePath();
 }

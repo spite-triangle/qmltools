@@ -16,6 +16,7 @@
 #include "common/utils.h"
 #include "common/lspLog.hpp"
 #include "common/lspProject.h"
+#include "server/lspLocalServer.h"
 
 int main(int argc, char *argv[])
 {
@@ -31,25 +32,9 @@ int main(int argc, char *argv[])
     // 初始化日志
     OwO::Logger::Instance()->init( OwO::ToStdString(QDir(QCoreApplication::applicationDirPath() + "/log/qmllsp.log").absolutePath()), project->getExportLog());
 
+    LspLocalServer server;
+    server.start();
 
-    QLocalServer* server = new QLocalServer();
-    if (!server->listen(project->getSocketFile())) {
-        qDebug() << "Failed to start server";
-        return -1;
-    }
-
-    QObject::connect(server, &QLocalServer::newConnection, [=]() {
-        QLocalSocket* socket = server->nextPendingConnection();
-        
-        QObject::connect(socket, &QLocalSocket::readyRead, [=]() {
-            QString message = socket->readAll();
-            
-
-            qDebug() << "Received message:" << message;
-            // socket->write("acknowledged");
-            // socket->flush();
-        });
-    });
 
     return app.exec();
 }

@@ -60,20 +60,18 @@ target("preview")
 
 target("qmllsp")
     add_rules("qt.console")
-    add_frameworks("QtNetwork")
+    add_frameworks("QtNetwork","QtConcurrent")
 
     add_defines("PROTOBUF_USE_DLLS")
 
-    add_linkdirs("lib/qtcreator","lib/protobuf/")
-    add_links("QmlJS","Utils","LanguageUtils","libprotobufd","abseil_dll")
+    add_linkdirs("lib/qtcreator")
+    add_links("QmlJS","Utils","LanguageUtils")
 
 
     add_includedirs("src/qmllsp/",
-                    "src/",
-                    "include/protobuf/")
+                    "src/")
     add_files("src/qmllsp/*.cpp",
               "src/qmllsp/**/*.cpp",
-              "src/qmllsp/**/*.cc",
               "src/qmllsp/**/*.h",
               "src/common/*.cpp")
 

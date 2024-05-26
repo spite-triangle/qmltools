@@ -14,10 +14,9 @@
                 "QT_CREATOR",
                 "PROTOBUF_CONSTEXPR"
             ],
-            "compilerPath": "D:\\Program Files\\mingw-w64\\x86_64-8.1.0\\bin\\gcc.exe",
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "windows-gcc-x64"
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4

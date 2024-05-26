@@ -32,8 +32,7 @@ namespace OwO
     }
 
     extern std::string QStringToUtf8(const QString & str){
-
-    return str.toStdString().data();
+        return str.toStdString().data();
     }
 
     extern std::string QStringToLocal(const QString & str){
