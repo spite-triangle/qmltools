@@ -20,16 +20,15 @@ public:
         : m_obj(obj)
     {}
 
-    bool load(const QByteArray & bytes){
+    static JsonObjectPtr load(const QByteArray & bytes){
         QJsonParseError error;
         QJsonDocument doc = QJsonDocument::fromJson(bytes, &error);
 
         if (error.error == QJsonParseError::NoError && doc.isObject()) {
-            m_obj = std::make_shared<QJsonObject>(doc.object());
-            return true;
+            return std::make_shared<QJsonObject>(doc.object());
         }
 
-        return false;
+        return JsonObjectPtr();
     }
 
     QByteArray dump(){
@@ -39,7 +38,7 @@ public:
         return doc.toJson(QJsonDocument::Compact);
     }
 
-    QJsonValueRef valueException(const QString & key) const {
+    QVariant valueException(const QString & key) const {
         if(m_obj == nullptr){
             throw JsonValueException("Json object is null.");
         }
@@ -47,7 +46,7 @@ public:
         if(m_obj->contains(key) == false){
             throw JsonValueException(OwO::Format("Not found key ", OwO::QStringToUtf8(key), "."));
         }
-        return (*m_obj)[key];
+        return (*m_obj)[key].toVariant();
     }
 
 private:

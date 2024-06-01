@@ -14,7 +14,10 @@ public:
     using ElementPtr = std::shared_ptr<T>;
 
 public:
-    SafeQueue(){}
+    SafeQueue(size_t uCapacity = 512)
+        : m_uCapacity(uCapacity)
+    {
+    }
 
     ElementPtr waitPop(){
         std::unique_lock<std::mutex> lock(m_mut);

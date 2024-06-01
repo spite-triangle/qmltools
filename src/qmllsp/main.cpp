@@ -18,6 +18,10 @@
 #include "common/lspProject.h"
 #include "server/lspLocalServer.h"
 
+#include "handler/registerTask.h"
+
+
+
 int main(int argc, char *argv[])
 {
 
@@ -33,8 +37,9 @@ int main(int argc, char *argv[])
     OwO::Logger::Instance()->init( OwO::ToStdString(QDir(QCoreApplication::applicationDirPath() + "/log/qmllsp.log").absolutePath()), project->getExportLog());
 
     LspLocalServer server;
-    server.start();
+    RegisterTaskToServer(server);
 
+    server.start();
 
     return app.exec();
 }

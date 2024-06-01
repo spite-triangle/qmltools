@@ -14,8 +14,6 @@
 #include "common/lspException.hpp"
 #include "common/jsonUtils.hpp"
 
-#include "handler/initializeTask.h"
-
 namespace Internal
 {
 
@@ -33,36 +31,46 @@ bool LspServere::distributeTask(const JsonObjectPtr & req)
     QString id = utils.valueException("id").toString();
     QString method = utils.valueException("method").toString();
 
+
+    if(m_mapTaskFactory.contains(method) == false) return false;
+
     // 创建
-    Task::Ptr task;
-    if(method == "initialize"){
-        task = Task::makeTask(id, method, std::make_shared<InitializeHandler>());
-    }
+    Task::Ptr task = m_mapTaskFactory[method]->createTask(id, method);
+    if(task == nullptr) return false;
 
     // 发布
-    if(task == nullptr) return false;
-    task->distribute(req,[this](const QString & id, bool bRes){
-        // 任务结束
-        if(bRes == true){
-            m_queueResps.waitPush(id);
-        }
-        return bRes;
+    task->distributePost(req,[this](const QString & id, bool bRes){
+        return handlerPostCallback(id,bRes);
     });
+
 
     // 保存任务
     storeTask(id, task);
     return true;
 }
 
-
-void LspServere::run()
+bool LspServere::handlerPostCallback(const QString &id, bool bRes)
 {
-    m_resResv = QtConcurrent::run(&LspServere::runSocketResv, this);
-    m_resSend = QtConcurrent::run(&LspServere::runSocketSend, this);
+    // 任务结束
+    if(bRes == true){
+        m_queueResps.waitPush(id);
+    }
+    return bRes;
 }
 
 
-void LspServere::runSocketResv()
+void LspServere::run()
+{
+    m_resResv = QtConcurrent::run(&LspServere::runSocketResvRequest, this);
+    m_resSend = QtConcurrent::run(&LspServere::runSocketSendResponse, this);
+}
+
+void LspServere::registoryTaskFactory(const QString &strMethod, const TaskFactory::Ptr &factory)
+{
+    m_mapTaskFactory[strMethod] = factory;
+}
+
+void LspServere::runSocketResvRequest()
 try
 {
     LSP_MESSAGE_S stMsg;
@@ -84,9 +92,8 @@ try
                 }
             }
          */
-        JsonObjectPtr req;
-        JsonUtils utils(req);
-        if(utils.load(stMsg.content) == false){
+        JsonObjectPtr req =  JsonUtils::load(stMsg.content);
+        if(req == nullptr){
              throw ParseRequestException("Failed to load json.");
         }
 
@@ -105,7 +112,7 @@ catch (const LspException & error){
     m_queueResps.pushNull();
 }
 
-void LspServere::runSocketSend()
+void LspServere::runSocketSendResponse()
 {
     while (true)
     {
@@ -205,19 +212,19 @@ qsizetype LspServere::findIndexFromSocket(const QByteArray &target)
 
 void LspServere::storeTask(const QString & id, const Task::Ptr & task) {
     QMutexLocker lock(&m_mutTask);
-    m_maptasks.insert(id, task);
+    m_mapTasks.insert(id, task);
 }
 
 void LspServere::removeTask(const QString & id) {
     QMutexLocker lock(&m_mutTask);
-    if(m_maptasks.contains(id) == false) return;
+    if(m_mapTasks.contains(id) == false) return;
 
-    m_maptasks.remove(id);
+    m_mapTasks.remove(id);
 }
 
-const Task::Ptr & LspServere::findTask(const QString &id)
+Task::Ptr LspServere::findTask(const QString &id)
 {
     QMutexLocker lock(&m_mutTask);
-    if(m_maptasks.contains(id) == false) return;
-    return m_maptasks[id];
+    if(m_mapTasks.contains(id) == false) return Task::Ptr(nullptr);
+    return m_mapTasks[id];
 }

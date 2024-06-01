@@ -13,8 +13,6 @@ public:
 
     virtual bool start() override;
 
-
-
 private:
     QLocalServer * m_server;
 };
