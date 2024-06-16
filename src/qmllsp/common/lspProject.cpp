@@ -19,13 +19,87 @@ The tool is a QML Language Server.
 
     app.add_flag("-v,--verbose", m_setting.bLog, "Print more debug information to `log/qmllsp.log`.");
 
-    app.add_option_function<std::string>("-s,--socket", 
-        [&](const std::string & val){
-            m_setting.strSocketFile = OwO::ToQString(val).trimmed();
-        }, 
-        "The socket file of language server.");
-
     app.add_option<uint>("-p,--port", m_setting.uPort, "server port.");
+
+    app.add_option_function<std::string>("--typeDescription", 
+        [&](const std::string & val){
+            auto path = formatPath(val);
+            checkPath(path, "typeDescription", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
+            m_setting.strTypeDescriptionFolder = path; 
+        }, 
+        "The `qml-type-descriptions` folder.");
+
+    app.add_option_function<std::string>("--sdk",
+        [&](const std::string & val){
+            auto path = formatPath(val);
+            checkPath(path, "sdk", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
+            m_setting.strSdkFolder = path;
+        },
+        "The folder of Qt Sdk.");
+
+    app.add_option_function<std::vector<std::string>>("--targetFolder",
+        [&](const std::vector<std::string> & vals){
+            for(auto & val : vals){
+                auto path = formatPath(val);
+                checkPath(path, "targetFolder", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
+                m_setting.lstTargetFolder.append(path);
+            }
+        },
+        "The folders including target file. Multiple folders are separated by `,`.")
+        ->delimiter(','); 
+    
+    app.add_option_function<std::vector<std::string>>("--qml2imports",
+        [&](const std::vector<std::string> & vals){
+            for (auto & val : vals)
+            {
+                auto path = formatPath(val);
+                checkPath(path, "qml2import", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
+                m_setting.lstQml2ImportPath.append(path);
+            }
+            
+        },
+        "The `QML2_IMPORT_PATH` folders. Multiple folders are separated by `,`.")
+        ->delimiter(','); 
+
+    app.add_option_function<std::vector<std::string>>("--import",
+        [&](const std::vector<std::string> & vals){
+            for (auto & val : vals)
+            {
+                auto path = formatPath(val);
+                checkPath(path, "imports", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
+                m_setting.lstImportPaths.append(path);
+            }
+            
+        },
+        "The qml import folders. Multiple folders are separated by `,`.")
+        ->delimiter(','); 
+    
+    app.add_option_function<std::vector<std::string>>("--qrc",
+        [&](const std::vector<std::string> & vals){
+            for (auto & val : vals)
+            {
+                auto path = formatPath(val);
+                checkPath(path, "qrc", CHECK_TYPE_E::TYPE_FILE | CHECK_TYPE_E::TYPE_EXIST);
+                m_setting.lstQrcPath.append(path);
+            }
+            
+        },
+        "The `*.qrc` resource files. Multiple folders are separated by `,`.")
+        ->delimiter(','); 
+
+         
+    app.add_option_function<std::vector<std::string>>("--src",
+        [&](const std::vector<std::string> & vals){
+            for (auto & val : vals)
+            {
+                auto path = formatPath(val);
+                checkPath(path, "src", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
+                m_setting.lstSourceFolder.append(path);
+            }
+            
+        },
+        "The folders including qml source project (e.g. `*.qml`, `.js`,`qmldir`). Multiple folders are separated by `,`.")
+        ->delimiter(','); 
 
     try {
         app.parse(argc, argv);
@@ -90,7 +164,20 @@ QString ProjectExplorer::Project::formatPath(const std::string &str)
 }
 
 
+QString Project::sdkAssetPath(const Project::SDK_ASSET_E &enType)
+{
+    std::lock_guard<decltype(m_muteSetting)> lock(m_muteSetting);
 
+    QString strFile;
+    switch (enType)
+    {
+    case SDK_ASSET_E::SDK_FOLDER_QML:  strFile = "qml";  break;
+    case SDK_ASSET_E::SDK_TOOL_PLUGINDUMP:  strFile = "bin/qmlplugindump.exe";  break;
+    default:
+        break;
+    }
 
+    return m_setting.strSdkFolder + "/" + strFile;
+}
 
 }

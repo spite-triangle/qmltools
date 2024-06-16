@@ -9,6 +9,7 @@
 #include <chrono>
 
 #include <QString>
+#include <QVariant>
 
 #define FUNC_SET(type, name, fcn) \
     void set##fcn(type const & other){\
@@ -25,6 +26,26 @@
 #define FUNC_SET_GET(type, name, fcn) \
     FUNC_SET(type,name,fcn)\
     FUNC_GET(type,name, fcn)
+
+
+#define MUT_FUNC_SET(mute,type, name, fcn) \
+    void set##fcn(type const & other){\
+        std::lock_guard<decltype(mute)> lock(mute); \
+        name = other; \
+    }
+    // 
+
+#define MUT_FUNC_GET(mute, type, name, fcn) \
+    type const & get##fcn() {\
+        std::lock_guard<decltype(mute)> lock(mute); \
+        return name;\
+    }
+    // 
+    
+#define MUT_FUNC_SET_GET(mute, type, name, fcn) \
+    MUT_FUNC_SET(mute,type,name,fcn)\
+    MUT_FUNC_GET(mute,type,name, fcn)
+
 
 #define RAII_DEFER(code) \
     std::shared_ptr<void> __raii(nullptr, [&](void*){\
@@ -65,6 +86,8 @@ namespace OwO
     }
 
     extern bool MakeDirectory(const std::string & directory);
+
+    extern QString ConvertToQString(const QVariant & var);
 
     extern std::string QStringToUtf8(const QString & str);
     extern std::string QStringToLocal(const QString & str);

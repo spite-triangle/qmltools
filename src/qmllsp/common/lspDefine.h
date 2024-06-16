@@ -1,10 +1,13 @@
 #ifndef LSPDEFINE_H
 #define LSPDEFINE_H
 
-#include <QJsonObject>
-
 #include <memory>
 
-using  JsonObjectPtr = std::shared_ptr<QJsonObject>;
+#include <QString>
+
+#include "common/json.hpp"
+
+using Json = nlohmann::json;
+using JsonPtr = std::shared_ptr<nlohmann::json>;
 
 #endif // LSPDEFINE_H

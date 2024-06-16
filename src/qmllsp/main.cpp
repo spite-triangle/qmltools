@@ -16,11 +16,10 @@
 #include "common/utils.h"
 #include "common/lspLog.hpp"
 #include "common/lspProject.h"
-#include "server/lspLocalServer.h"
-
+#include "server/lspServer.h"
 #include "handler/registerTask.h"
-
-
+#include "qmlModel/qmlLanguageModel.h"
+#include "utils/mimeutils.h"
 
 int main(int argc, char *argv[])
 {
@@ -36,10 +35,18 @@ int main(int argc, char *argv[])
     // 初始化日志
     OwO::Logger::Instance()->init( OwO::ToStdString(QDir(QCoreApplication::applicationDirPath() + "/log/qmllsp.log").absolutePath()), project->getExportLog());
 
-    LspLocalServer server;
+    auto server = LspServer::createServer();
     RegisterTaskToServer(server);
+    server->start();
 
-    server.start();
+    Utils::setMimeStartupPhase(Utils::MimeStartupPhase::PluginsLoading);
+    Utils::setMimeStartupPhase(Utils::MimeStartupPhase::PluginsInitializing);
+    Utils::setMimeStartupPhase(Utils::MimeStartupPhase::PluginsDelayedInitializing);
+    Utils::setMimeStartupPhase(Utils::MimeStartupPhase::UpAndRunning);
+
+    // 创建语言模型
+    auto model = QmlLanguageModel::Instance();
+    
 
     return app.exec();
 }

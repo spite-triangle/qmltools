@@ -6,7 +6,6 @@
 #include "common/utils.h"
 #include "common/CLI11.hpp"
 #include "common/previewLog.hpp"
-#include "previewProject.h"
 
 void ProjectExplorer::Project::appendQrcFile(const QString &strPath)
 {
@@ -171,6 +170,9 @@ QString ProjectExplorer::Project::parentFolder(const QString &strPath)
 
     return QString();
 }
+
+
+
 
 void ProjectExplorer::Project::checkPath(const QString &strPath, const std::string & name,int nType)
 {

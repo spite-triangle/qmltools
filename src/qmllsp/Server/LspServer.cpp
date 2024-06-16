@@ -11,76 +11,132 @@
 #include <stdexcept>
 
 #include "common/lspLog.hpp"
+#include "common/lspProject.h"
 #include "common/lspException.hpp"
-#include "common/jsonUtils.hpp"
+
 
 namespace Internal
 {
 
 // header 与 content 的边界
-const QByteArray g_boundaryLine = "\r\n\r\n";
+const char* g_boundaryLine = "\r\n\r\n";
 
-const QByteArray g_lineEnd = "\r\n";
+const char* g_lineEnd = "\r\n";
 
 } // namespace Internal
 
 
-bool LspServere::distributeTask(const JsonObjectPtr & req)
+LspServer::Ptr LspServer::createServer()
 {
-    JsonUtils utils(req);
-    QString id = utils.valueException("id").toString();
-    QString method = utils.valueException("method").toString();
+    return Ptr( new LspServer());
+}
 
+bool LspServer::distributeTask(const JsonPtr & req)
+{
 
-    if(m_mapTaskFactory.contains(method) == false) return false;
+    auto & json = *req;
+    QString method = OwO::Utf8ToQString(json["method"].get<std::string>());
 
-    // 创建
-    Task::Ptr task = m_mapTaskFactory[method]->createTask(id, method);
-    if(task == nullptr) return false;
+    // 区分 message 
+    if(json.contains("id") == true){
+        QString id = OwO::ConvertToQString(json["id"].get<int>());
 
-    // 发布
-    task->distributePost(req,[this](const QString & id, bool bRes){
-        return handlerPostCallback(id,bRes);
-    });
+        if(m_mapTaskFactory.contains(method) == false) return true;
 
+        // 创建
+        Task::Ptr task = m_mapTaskFactory[method]->createMessageTask(id, method);
+        if(task == nullptr) return false;
 
-    // 保存任务
-    storeTask(id, task);
+        task->getHandler()->setServer(shared_from_this());
+
+        // 发布
+        task->distribute(req,[this](const QString & id, bool bRes){
+            return handlerPostCallback(id,bRes);
+        });
+
+        // 保存任务
+        storeTask(id, task);
+    }else{
+        if(m_mapTaskFactory.contains(method) == false) return true;
+
+        // 创建
+        Task::Ptr task = m_mapTaskFactory[method]->createNotificationTask(method);
+        if(task == nullptr) return false;
+
+        task->getHandler()->setServer(shared_from_this());
+
+        // 发布
+        task->distribute(req);
+    }
     return true;
 }
 
-bool LspServere::handlerPostCallback(const QString &id, bool bRes)
+bool LspServer::handlerPostCallback(const QString &id, bool bRes)
 {
     // 任务结束
     if(bRes == true){
-        m_queueResps.waitPush(id);
+        auto task = dynamic_cast<TaskMessage*>(findTask(id).get());
+        if(task == nullptr) return false;
+
+        RESPONSE_MESSAGE_S msg;
+        msg.msgbody = task->getResponsePtr();
+        msg.id = id;
+
+        m_queueResps.waitPush(msg);
     }
     return bRes;
 }
 
 
-void LspServere::run()
+
+bool LspServer::start()
 {
-    m_resResv = QtConcurrent::run(&LspServere::runSocketResvRequest, this);
-    m_resSend = QtConcurrent::run(&LspServere::runSocketSendResponse, this);
+    auto project = ProjectExplorer::Project::Instance();
+
+    ASSERT_RETURN(tcp::InitSocketNet() == true, "Failed to init net.", false);
+
+    m_serverSocket = tcp::InitServer("127.0.0.1", project->getPort());
+    ASSERT_RETURN(m_serverSocket != -1, "Failed to init server socket.", false);
+
+    m_connectSocket = tcp::AcceptClient(m_serverSocket);
+    ASSERT_RETURN(m_connectSocket.fd != -1, "Failed to connect client.", false);
+
+
+    m_resResv = QtConcurrent::run(&LspServer::runSocketResvRequest, this);
+    m_resSend = QtConcurrent::run(&LspServer::runSocketSendResponse, this);
+    return true;
 }
 
-void LspServere::registoryTaskFactory(const QString &strMethod, const TaskFactory::Ptr &factory)
+bool LspServer::close()
+{
+    tcp::CloseSocket(m_connectSocket.fd);
+    tcp::CloseSocket(m_serverSocket);
+    return tcp::CloseSocketNet();
+}
+
+void LspServer::registoryTaskFactory(const QString &strMethod, const TaskFactory::Ptr &factory)
 {
     m_mapTaskFactory[strMethod] = factory;
 }
 
-void LspServere::runSocketResvRequest()
+void LspServer::sendMsg(const JsonPtr &msgBody)
+{
+    RESPONSE_MESSAGE_S msg;
+    msg.msgbody = msgBody;
+
+    m_queueResps.waitPush(msg);
+}
+
+void LspServer::runSocketResvRequest()
 try
 {
     LSP_MESSAGE_S stMsg;
     while (true)
     {
-        if(m_pSocket == nullptr) return;
-        if(m_pSocket->waitForReadyRead(-1) == false) return;
-
         // 接收信息，只有 content 有内容才做处理
-        if(recv(stMsg) == false) continue;
+        if(recv(stMsg) == false){
+            throw ParseRequestException("Failed to recv.");
+        }
 
         /* 
             {
@@ -92,8 +148,8 @@ try
                 }
             }
          */
-        JsonObjectPtr req =  JsonUtils::load(stMsg.content);
-        if(req == nullptr){
+        JsonPtr req  = std::make_shared<Json>(Json::parse(stMsg.content, nullptr, false));
+        if(req == nullptr || req->is_null()){
              throw ParseRequestException("Failed to load json.");
         }
 
@@ -108,64 +164,74 @@ try
 }
 catch (const LspException & error){
     LOG_ERROR("%s",error.what());
-    m_queueResps.waitPush(R"({"jsonrpc":"2.0","method":"exit"})");
+
+    auto msg = std::make_shared<Json>(R"({"jsonrpc":"2.0","method":"exit"})");
+    sendMsg(msg);
+
     m_queueResps.pushNull();
 }
 
-void LspServere::runSocketSendResponse()
+void LspServer::runSocketSendResponse()
 {
     while (true)
     {
         auto elem = m_queueResps.waitPop();
         if(elem == nullptr) return;
 
-        // 根据 id 获取任务
-        auto id = *elem;
-        auto task = findTask(id);
+        if(elem->id.isEmpty() == false){
+            removeTask(elem->id);
+        }
 
-
-        task->getResponsePtr();
-
-
-        removeTask(id);
-
-        // QByteArray resp = QString("Content-Length: %1%2%3")
-        //                             .arg(msg->size())
-        //                             .arg(Internal::g_boundaryLine)
-        //                             .arg(*msg).toLocal8Bit();
-        // send(resp);
+        auto msg = genarateSendMessage(elem->msgbody);
+        send(msg);
     }
 }
 
-bool LspServere::recv(LSP_MESSAGE_S &stMsg)
+std::string LspServer::genarateSendMessage(const JsonPtr &json)
 {
-    if(recvHead(stMsg) == false) return false;
+    if(json == nullptr) return std::string();
 
-    // 读取内容
-    if(m_pSocket->bytesAvailable() >= stMsg.nLen){
-        stMsg.content = m_pSocket->read(stMsg.nLen);
-        return true;
-    }
+    auto content = json->dump(4);
 
-    return false;
+    std::string header;
+    header.append("Content-Length: " + std::to_string(content.size()));
+    header.append(Internal::g_lineEnd);
+    header.append("Content-Type: application/vscode-jsonrpc;charset=utf-8");
+    header.append(Internal::g_boundaryLine);
+
+    return header + content;
 }
 
-bool LspServere::recvHead(LSP_MESSAGE_S &stMsg)
+
+bool LspServer::recv(LSP_MESSAGE_S &stMsg)
+{
+    // 解析头
+    ASSERT_RETURN(recvHead(stMsg) == true, "Failed to recv head information.", false);
+
+    // 获取内容
+    char * buff = new char[stMsg.nLen + 1]();
+    ASSERT_RETURN(tcp::RecvMsg(m_connectSocket.fd, buff, stMsg.nLen) == true, "Failed to recv content.", false)
+
+    stMsg.content = OwO::QStringToUtf8(OwO::LocalToQString(buff));
+    return true;
+}
+
+bool LspServer::recvHead(LSP_MESSAGE_S &stMsg)
 {
     if(stMsg.nLen >= 0)  return true;
 
     // 查找 header 与 content 的分界线
-    qsizetype index = findIndexFromSocket(Internal::g_boundaryLine);
-    if( index < 0) return false;
+    std::string strHead;
+    if(tcp::RecvMsg(m_connectSocket.fd, Internal::g_boundaryLine, strHead) == false){
+        return false;
+    }
 
-    // 从 socket 中读取 header
-    auto header = m_pSocket->read(index + Internal::g_boundaryLine.size());
-    QStringList lstHead = QString(header).split(Internal::g_lineEnd);
+    // 解析头
+    QStringList lstHead =  OwO::Utf8ToQString(strHead).split(Internal::g_lineEnd);
     if(lstHead.size() <= 0){
         throw ParseRequestException("Not found valid header information.");
     }
 
-    // 解析头
     for (auto line : lstHead)
     {
         if(line.startsWith("Content-Length")){
@@ -177,14 +243,13 @@ bool LspServere::recvHead(LSP_MESSAGE_S &stMsg)
         }
 
         if(line.startsWith("Content-Type")){
-            stMsg.strType = line.mid(13).trimmed();
+            stMsg.strType = OwO::QStringToUtf8(line.mid(13).trimmed());
         }
     }
-
     return true;
 }
 
-void LspServere::send(const QByteArray &data)
+bool LspServer::send(const std::string  &data)
 {
     const auto & total = data.length();
 
@@ -195,36 +260,35 @@ void LspServere::send(const QByteArray &data)
     {
         size_t diff = total - sendLen;
         len =  diff < len ?  diff : len;
-        sendLen += m_pSocket->write(data.data() + sendLen, len);
+        
+        int res = tcp::SendMsg(m_connectSocket.fd, data.c_str() + sendLen, len);
+        if(res < 0 ) return false;
+
+        sendLen += res;
     }
+
+    return true;
 }
 
 
-qsizetype LspServere::findIndexFromSocket(const QByteArray &target)
-{
-    m_pSocket->startTransaction();
-    auto bytes = m_pSocket->readAll();
-    auto index = bytes.indexOf(target);
-    m_pSocket->rollbackTransaction();
-    return index;
-}
 
-
-void LspServere::storeTask(const QString & id, const Task::Ptr & task) {
+void LspServer::storeTask(const QString & id, const Task::Ptr & task) {
     QMutexLocker lock(&m_mutTask);
     m_mapTasks.insert(id, task);
 }
 
-void LspServere::removeTask(const QString & id) {
+void LspServer::removeTask(const QString & id) {
     QMutexLocker lock(&m_mutTask);
     if(m_mapTasks.contains(id) == false) return;
 
     m_mapTasks.remove(id);
 }
 
-Task::Ptr LspServere::findTask(const QString &id)
+Task::Ptr LspServer::findTask(const QString &id)
 {
     QMutexLocker lock(&m_mutTask);
     if(m_mapTasks.contains(id) == false) return Task::Ptr(nullptr);
     return m_mapTasks[id];
 }
+
+

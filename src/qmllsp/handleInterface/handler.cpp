@@ -3,18 +3,18 @@
 
 #include "common/lspException.hpp"
 
-bool Handler::run(const JsonObjectPtr & req, JsonObjectPtr resp) 
+bool Handler::run(const JsonPtr & req, JsonPtr resp) 
 try{
-    return handleRequest(req, resp);
+    return handleMessage(*req, *resp);
 }
 catch (const InterruptException &e)
 {
     return handleInterrupt();
 }
 
-bool Handler::run(const JsonObjectPtr &req)
+bool Handler::run(const JsonPtr &req)
 try{
-    return handleMessage(req);
+    return handleNotification(*req);
 }
 catch (const InterruptException &e)
 {

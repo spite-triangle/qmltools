@@ -214,3 +214,115 @@ if (!m_lastLoadedUrl.isEmpty()) {
 QmlDebug::QmlDebugConnectionManager 创建连接，给  QmlDebug::QmlDebugClient 使用
 
 qmlengine.cpp 下的 QmlEnginePrivate : public QmlDebugClient 就是调试器实现
+
+# QmlJS
+
+## ModelManagerInterface
+
+### 项目刷新
+
+```cpp
+
+/* 系统配置修改时，用于参数刷新 */
+ModelManagerInterface::ProjectInfo ModelManager::defaultProjectInfoForProject(
+    Project *project, const FilePaths &hiddenRccFolders) const
+{
+    ModelManagerInterface::ProjectInfo projectInfo;
+    projectInfo.project = project;    // 自定义 project
+    projectInfo.qmlDumpEnvironment = Utils::Environment::systemEnvironment();
+    /* 
+        Utils::mimeTypeForFile(filePath,MimeMatchMode::MatchExtension).name() 类型为以下结果
+        Constants::QML_MIMETYPE ,
+        Constants::QBS_MIMETYPE,
+        Constants::QMLPROJECT_MIMETYPE,
+        Constants::QMLTYPES_MIMETYPE,
+        Constants::QMLUI_MIMETYPE
+     */
+    projectInfo.sourceFiles;
+
+    // 有 qmlplugindump.exe 就启用
+    projectInfo.tryQmlDump
+    projectInfo.qmlDumpPath
+    projectInfo.qmlDumpEnvironment.appendOrSet("QML2_IMPORT_PATH", environment("QML2_IMPORT_PATH"), ":");
+
+    //   ((qtVersion() > QVersionNumber(4, 8, 4) && qtVersion() < QVersionNumber(5, 0, 0)) || qtVersion() >= QVersionNumber(5, 1, 0));
+    // 满足上述条件，就为 true
+    projectInfo.qmlDumpHasRelocatableFlag
+
+    // 版本号 5.15.2
+    projectInfo.qtVersionString
+
+    // 应用程序所在的绝对路径，需要在项目文件夹下
+    projectInfo.applicationDirectories;
+
+    // qml sdk 路径
+    projectInfo.qtQmlPath;
+
+    projectInfo.generatedQrcFiles // 根据 rcc 文件对应的 qrc 文件
+    projectInfo.allResourceFiles  // qrc 文件路径， Utils::filteredUnique 进行去重
+    projectInfo.activeResourceFiles 
+    projectInfo.resourceFileContents // qrc 路径 -> qrc 内容
+
+    // 
+    projectInfo.importPaths.maybeInsert(FilePath::fromString(path),
+                                                QmlJS::Dialect::Qml);
+
+
+    // 根据 qmljsbundleprovider.h 进行创建
+    projectInfo.extendedBundle
+    projectInfo.activeBundle;
+}
+
+
+/* 
+    1. qml 文件名修改
+    2. 新 qml 文件添加
+    3. qml 文件删除
+    4. 配置修改
+ */
+void QmakeBuildSystem::updateQmlJSCodeModel(){
+
+    // 配置修改刷新设置
+    QmlJS::ModelManagerInterface::ProjectInfo projectInfo
+        = modelManager->defaultProjectInfoForProject(project(),
+                                                     project()->files(Project::HiddenRccFolders));
+
+    // 根据 projectInfo 配置，重新设置项目
+    // 会更新删除的文件和新添加的文件
+    ModelManagerInterface::updateProjectInfo()
+
+    // projectInfo 更新后的信号
+    // 刷新所有源文件
+    ModelManagerInterface::projectInfoUpdated
+    ModelManagerInterface::updateSourceFiles
+}
+
+```
+
+### 文件更新
+
+```cpp
+    // 文档内容被改变，已经保存
+    QTextDocument::contentsChanged
+
+    // qrc 需要实现异常检测
+
+    // qml, qrc 文件修改，就调用。会触发 ModelManagerInterface::documentUpdated
+    ModelManagerInterface::updateSourceFiles
+
+    // 报告文件处理结果信号
+    ModelManagerInterface::documentUpdated
+
+    // 更新当前正操作文件的 SemanticInfo 用于语法提示、查找定义、重命名等操作
+    SemanticInfoUpdater::update
+    SemanticInfoUpdater::makeNewSemanticInfo
+```
+
+
+```cpp
+    // 文档存在被修改的状态，可能还未保存
+    QTextDocument::modificationChanged
+
+    // model 更新
+    ModelManagerInterface::fileChangedOnDisk
+```

@@ -60,11 +60,8 @@ target("preview")
 
 target("qmllsp")
     add_rules("qt.console")
-    add_frameworks("QtNetwork","QtConcurrent")
 
-    add_defines("PROTOBUF_USE_DLLS")
-
-    add_linkdirs("lib/qtcreator")
+    add_frameworks("QtNetwork","QtConcurrent","QtGui")
     add_links("QmlJS","Utils","LanguageUtils")
 
 

@@ -3,6 +3,7 @@
 
 #include <io.h>
 #include <direct.h>
+#include "utils.h"
 
 
 #define PATH_DELIMITER '/'
@@ -31,7 +32,13 @@ namespace OwO
         return true;
     }
 
-    extern std::string QStringToUtf8(const QString & str){
+    QString ConvertToQString(const QVariant &var)
+    {
+        return var.toString();
+    }
+
+    extern std::string QStringToUtf8(const QString &str)
+    {
         return str.toStdString().data();
     }
 

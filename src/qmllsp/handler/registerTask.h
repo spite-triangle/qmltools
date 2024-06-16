@@ -4,6 +4,6 @@
 #include "server/lspServer.h"
 
 
-extern void RegisterTaskToServer(LspServere & server);
+extern void RegisterTaskToServer(LspServer::Ptr & server);
 
 #endif // REGISTERTASK_H

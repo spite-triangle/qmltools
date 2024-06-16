@@ -8,6 +8,8 @@
 #include "common/utils.h"
 #include "common/lspDefine.h"
 
+class LspServer;
+
 class Handler{
 
 public:
@@ -16,25 +18,28 @@ public:
 public:
     virtual ~Handler() = default;
 
-    bool run(const JsonObjectPtr & req);
-    bool run(const JsonObjectPtr & req, JsonObjectPtr resp);
+    bool run(const JsonPtr & req);
+    bool run(const JsonPtr & req, JsonPtr resp);
     bool stop();
     
+    FUNC_SET(std::shared_ptr<LspServer>, m_server, Server);
+
 protected:
     /* 中断任务 */
     void checkInterrupt();
 
     /* 处理请求 */
-    virtual bool handleRequest(const JsonObjectPtr & req, JsonObjectPtr resp){ return false;};
+    virtual bool handleMessage(const Json & req, Json & resp){ return false;};
 
-    /* 处理 message */
-    virtual bool handleMessage(const JsonObjectPtr & req){ return false; };
+    /* 处理 notification */
+    virtual bool handleNotification(const Json & req){ return false; };
 
     /* 中断处理 */
     virtual bool handleInterrupt(){ return true; };
 
-private:
+protected:
     bool m_bInterrupt;
+    std::shared_ptr<LspServer> m_server;
 };
 
 
