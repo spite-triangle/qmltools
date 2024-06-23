@@ -24,4 +24,26 @@ public:
     virtual bool handleNotification(const Json & req) override;
 };
 
+class DocumentCreateTask : public Handler{
+
+public:
+    /* 处理请求 */
+    virtual bool handleNotification(const Json & req) override;
+};
+
+class DocumentRemoveTask : public Handler{
+
+public:
+    /* 处理请求 */
+    virtual bool handleNotification(const Json & req) override;
+};
+
+
+class DocumentRenameTask: public Handler{
+public:
+    /* 处理请求 */
+    virtual bool handleNotification(const Json & req) override;
+};
+
+
 #endif // DOCUMENTTASK_H

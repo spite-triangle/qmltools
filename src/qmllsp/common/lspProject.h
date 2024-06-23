@@ -1,6 +1,8 @@
 #ifndef LSPPROJECT_H
 #define LSPPROJECT_H
 
+#include <mutex>
+
 #include <QUrl>
 #include <QSet>
 #include <QList>
@@ -8,7 +10,7 @@
 #include <QLocale>
 #include <QVersionNumber>
 
-#include <mutex>
+#include "utils/filepath.h"
 
 #include "common/utils.h"
 #include "common/QSingleton.hpp"
@@ -80,6 +82,15 @@ public:
 
     /* sdk 下的资产目录 */
     QString sdkAssetPath(const SDK_ASSET_E & enType);
+
+    void clearSourceFiles();
+    void appendSourceFile(const Utils::FilePaths & paths);
+    void appendSourceFile(const QString & path);
+    bool containSourceFile(const QString & path);
+    void removeSourceFile(const QString & path);
+    size_t sizeSourceFile();
+    QSet<Utils::FilePath> getSourceFiles();
+
 private:
 
     void checkPath(const QString & strPath, const std::string & name ,int nType);
@@ -88,6 +99,9 @@ private:
 private:
     std::mutex m_muteSetting;
     PROJECT_SETTING_S m_setting;
+
+    std::mutex m_muteSourceSet;
+    QSet<Utils::FilePath> m_setSourceFiles; // 项目工程的所有源文件
 };
    
 } // namespace ProjectExplorer

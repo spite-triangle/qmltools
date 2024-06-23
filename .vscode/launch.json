@@ -21,7 +21,8 @@
                 "--typeDescription=E:/workspace/qt_servitor/tools/asset/qml-type-descriptions",
                 "--sdk=D:\\ProgramData\\Qt6\\6.7.0\\msvc2019_64",
                 "--qrc=E:/workspace/qml/qml/src/qml.qrc",
-                "--src=E:/workspace/qml/qml/src"
+                "--src=E:/workspace/qml/qml/src",
+                "--import=E:/workspace/qml/qml/src/"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/bin/debug_win/",

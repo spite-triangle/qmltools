@@ -12,6 +12,7 @@
 #include <qmljs/qmljsscopebuilder.h>
 #include <qmljs/qmljsscopechain.h>
 #include <qmljs/parser/qmljsengine_p.h>
+#include <utils/qtcsettings.h>
 
 #include <QDebug>
 
@@ -35,6 +36,15 @@ struct Declaration
     int endLine = 0;
     int endColumn = 0;
 };
+
+static Utils::QtcSettings createUserSettings()
+{
+    return Utils::QtcSettings(QSettings::IniFormat,
+                                  QSettings::UserScope,
+                                  QLatin1String("QtProject"),
+                                  QLatin1String("QtCreator"));
+}
+
 
 class FindIdDeclarations: protected Visitor
 {
@@ -664,9 +674,6 @@ int SemanticInfo::revision() const
 
 
 
-
-
-
 SemanticInfo SemanticInfo::makeNewSemanticInfo(const Document::Ptr &doc, const Snapshot &snapshot, QTextDocumentPtr qdoc)
 {
     using namespace QmlJS;
@@ -677,17 +684,8 @@ SemanticInfo SemanticInfo::makeNewSemanticInfo(const Document::Ptr &doc, const S
 
     ModelManagerInterface *modelManager = ModelManagerInterface::instance();
 
-    Link(semanticInfo.snapshot, modelManager->defaultVContext(doc->language(), doc), modelManager->builtins(doc))();
-    modelManager->test_joinAllThreads();
-
     Link link(semanticInfo.snapshot, modelManager->defaultVContext(doc->language(), doc), modelManager->builtins(doc));
     semanticInfo.context = link(doc, &semanticInfo.semanticMessages);
-
-    for (auto msg : semanticInfo.semanticMessages)
-    {
-        qDebug() << msg.message;
-    }
-    
 
     auto scopeChain = new ScopeChain(doc, semanticInfo.context);
     semanticInfo.setRootScopeChain(QSharedPointer<const ScopeChain>(scopeChain));
@@ -701,14 +699,9 @@ SemanticInfo SemanticInfo::makeNewSemanticInfo(const Document::Ptr &doc, const S
         }
     } else  */
     {
-        Check checker(doc, semanticInfo.context);
+        auto setting = createUserSettings();
+        Check checker(doc, semanticInfo.context, &setting);
         semanticInfo.staticAnalysisMessages = checker();
-        
-        for (auto msg : semanticInfo.staticAnalysisMessages)
-        {
-            qDebug() << msg.message;
-        }
-
     }
 
     semanticInfo.doc = qdoc;
@@ -720,7 +713,6 @@ SemanticInfo SemanticInfo::makeNewSemanticInfo(const Document::Ptr &doc, const S
     // Refresh the ids
     FindIdDeclarations updateIds;
     semanticInfo.idLocations = updateIds(doc);
-
     return semanticInfo;
 }
 

@@ -3,6 +3,7 @@
 #include <QUrl>
 
 #include "common/utils.h"
+#include "common/lspProject.h"
 #include "server/lspServer.h"
 #include "qmlModel/qmlLanguageModel.h"
 
@@ -22,7 +23,20 @@
  */
 bool DocumentOpenedTask::handleNotification(const Json &req)
 {
+    auto model = QmlLanguageModel::Instance();
 
+    auto uri = req["params"]["textDocument"]["uri"].get<std::string>();
+    QUrl url = QUrl(OwO::Utf8ToQString(uri));
+
+    if(url.scheme() == "file"){
+        auto strPath = url.toLocalFile();
+        model->waitModleUpdate();
+
+        if(model->isValid()){
+            model->setCurrFocusFile(strPath);
+            model->updateSourceFile(strPath);
+        }
+    }
     return true;
 }
 
@@ -54,7 +68,6 @@ bool DocumentOpenedTask::handleNotification(const Json &req)
  */
 bool DocumentChangedTask::handleNotification(const Json &req)
 {
-
     return false;
 }
 
@@ -78,7 +91,127 @@ bool DocumentSavedTask::handleNotification(const Json &req)
     QUrl url = QUrl(OwO::Utf8ToQString(uri));
 
     if(url.scheme() == "file"){
-        model->updateSourceFile(url.toLocalFile());
+        auto strPath = url.toLocalFile();
+        model->waitModleUpdate();
+
+        if(model->isValid()){
+            model->setCurrFocusFile(strPath);
+            model->updateSourceFile(strPath);
+        }
     }
+    return true;
+}
+
+
+/* 
+    {
+        "jsonrpc": "2.0",
+        "method": "workspace/didCreateFiles",
+        "params": {
+            "files":[
+                {uri: string}
+            ]
+        }
+    }
+ */
+bool DocumentCreateTask::handleNotification(const Json &req)
+{
+    auto model = QmlLanguageModel::Instance();
+
+    bool bRest = false;
+    QStringList lstPath;
+    for (auto & file : req["params"]["files"])
+    {
+        auto uri = file["uri"].get<std::string>();
+        QUrl url = QUrl(OwO::Utf8ToQString(uri));
+        if(url.scheme() == "file"){
+            auto path = url.toLocalFile();
+            lstPath.append(path); 
+            if(path.endsWith("qmldir")) bRest = true;
+        }
+    }
+
+    model->appendSourceFile(lstPath);
+    
+    if(bRest == true){
+        model->waitModelManagerUpdate();
+        model->resetModle();
+    }
+    return true;
+}
+
+/* 
+    {
+        "jsonrpc": "2.0",
+        "method": "workspace/didDeleteFiles",
+        "params": {
+            "files":[
+                {uri: string}
+            ]
+        }
+    }
+ */
+bool DocumentRemoveTask::handleNotification(const Json &req)
+{
+    auto model = QmlLanguageModel::Instance();
+    auto project = ProjectExplorer::Project::Instance();
+
+    for (auto & file : req["params"]["files"])
+    {
+        auto uri = file["uri"].get<std::string>();
+        QUrl url = QUrl(OwO::Utf8ToQString(uri));
+        if(url.scheme() == "file"){
+            auto path = url.toLocalFile();
+            project->removeSourceFile(path);
+        }
+    }
+
+    model->restProjectInfo();
+    model->waitModleUpdate();
+    model->resetModle();
+    return true;
+}
+
+
+/* 
+    {
+        "jsonrpc": "2.0",
+        "method": "workspace/didRenameFiles",
+        "params": {
+            "files":[
+                {
+                    oldUri: string,
+                    newUri: string,
+                },
+            ]
+        }
+    }
+ */
+bool DocumentRenameTask::handleNotification(const Json &req)
+{
+    auto model = QmlLanguageModel::Instance();
+    auto project = ProjectExplorer::Project::Instance();
+
+    bool bRest = false;
+    for (auto & file : req["params"]["files"])
+    {
+        auto uri = file["oldUri"].get<std::string>();
+        QUrl url = QUrl(OwO::Utf8ToQString(uri));
+        if(url.scheme() == "file"){
+            auto path = url.toLocalFile();
+            project->removeSourceFile(path);
+        }
+
+        uri = file["newUri"].get<std::string>();
+        url = QUrl(OwO::Utf8ToQString(uri));
+        if(url.scheme() == "file"){
+            auto path = url.toLocalFile();
+            project->appendSourceFile(path);
+        }
+    }
+
+    model->restProjectInfo();
+    model->waitModleUpdate();
+    model->resetModle();
     return true;
 }

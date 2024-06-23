@@ -20,10 +20,42 @@ bool InitializeHandler::handleMessage(const Json & req, Json & resp) {
         {"triggerCharacters", Json::array()}
     };
 
+    Json filters = Json::array({
+        {
+            {"scheme", "file"},
+            {"matches", "file"},
+            {"pattern", {
+                {"glob", "**/*.{qml,js}"}
+            }}
+        },
+        {
+            {"scheme", "file"},
+            {"matches", "file"},
+            {"pattern", {
+                {"glob", "**/qmldir"}
+            }}
+        }
+    });
+
+    Json workspace{
+        {"fileOperations", {
+            {"didCreate", {
+                {"filters", filters}
+            }},
+            {"didRename", {
+                {"filters", filters}
+            }},
+            {"didDelete", {
+                {"filters", filters}
+            }},
+        }}
+    };
+
     Json result{
         {
             "capabilities",{
-                { "textDocumentSync", text_document_sync }, // 文件被修改时，如何通知服务
+                {"textDocumentSync", text_document_sync }, // 文件被修改时，如何通知服务
+                {"workspace", workspace},
                 // { "completionProvider", completion_provider }, // 代码补全
                 { "hoverProvider", true }, // 悬停提示
                 // { "definitionProvider", true }, // 跳转到定义
@@ -45,5 +77,8 @@ bool InitializeHandler::handleMessage(const Json & req, Json & resp) {
 
 bool InitializedHandler::handleNotification(const Json &req)
 {
-   return QmlLanguageModel::Instance()->updateProjectInfo();
+   QmlLanguageModel::Instance()->restProjectInfo();
+   QmlLanguageModel::Instance()->waitModleUpdate();
+   QmlLanguageModel::Instance()->updateSourceFile();
+   return true;
 }

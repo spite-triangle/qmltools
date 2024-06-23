@@ -48,6 +48,9 @@ public:
     /* 发送信息 */
     void sendMsg(const JsonPtr & msgBody);
 
+public slots:
+
+    void onDiagnosticMessageUpdated(const JsonPtr & param);
 
 protected:
     LspServer(QObject * parent = nullptr)

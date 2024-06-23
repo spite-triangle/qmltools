@@ -13,6 +13,7 @@
 #include "common/lspLog.hpp"
 #include "common/lspProject.h"
 #include "common/lspException.hpp"
+#include "common/jsonUtil.hpp"
 
 
 namespace Internal
@@ -292,3 +293,9 @@ Task::Ptr LspServer::findTask(const QString &id)
 }
 
 
+void LspServer::onDiagnosticMessageUpdated(const JsonPtr & param) {
+    ASSERT_RETURN(param != nullptr && param->is_null() == false, "diagnostic is null");
+
+    auto msg = JsonUtil::NotificationMessage("textDocument/publishDiagnostics", *param);
+    sendMsg(std::make_shared<Json>(std::move(msg)));
+}

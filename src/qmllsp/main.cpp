@@ -46,7 +46,6 @@ int main(int argc, char *argv[])
 
     // 创建语言模型
     auto model = QmlLanguageModel::Instance();
-    
-
+    QObject::connect(model.get(), &QmlLanguageModel::sigDiagnosticMessageUpdated, server.get(), &LspServer::onDiagnosticMessageUpdated); 
     return app.exec();
 }

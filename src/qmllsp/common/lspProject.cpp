@@ -180,4 +180,46 @@ QString Project::sdkAssetPath(const Project::SDK_ASSET_E &enType)
     return m_setting.strSdkFolder + "/" + strFile;
 }
 
+
+void Project::clearSourceFiles() {
+    std::lock_guard lock(m_muteSourceSet);
+    m_setSourceFiles.clear();
+}
+
+void Project::appendSourceFile(const Utils::FilePaths & paths) {
+    std::lock_guard lock(m_muteSourceSet);
+    for (auto & path : paths)
+    {
+        m_setSourceFiles.insert(path);
+    }
+    
+}
+
+void Project::appendSourceFile(const QString & path) {
+    std::lock_guard lock(m_muteSourceSet);
+    m_setSourceFiles.insert(Utils::FilePath::fromString(path));
+}
+
+bool Project::containSourceFile(const QString & path) {
+    std::lock_guard lock(m_muteSourceSet);
+    return m_setSourceFiles.contains(Utils::FilePath::fromString(path));
+}
+
+void Project::removeSourceFile(const QString & path) {
+    std::lock_guard lock(m_muteSourceSet);
+    m_setSourceFiles.remove(Utils::FilePath::fromString(path));
+}
+
+size_t Project::sizeSourceFile()
+{
+    std::lock_guard lock(m_muteSourceSet);
+    return m_setSourceFiles.size();
+}
+
+QSet<Utils::FilePath> Project::getSourceFiles()
+{
+    std::lock_guard lock(m_muteSourceSet);
+    return m_setSourceFiles;
+}
+
 }

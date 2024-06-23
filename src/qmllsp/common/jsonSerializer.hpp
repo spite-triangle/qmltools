@@ -1,0 +1,7 @@
+#include "common/json.hpp"
+#include "common/lspDefine.h"
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(POSITION_S, line, character);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(RANGE_S, start, end);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(TEXT_DOCUMENT_ITEM_S, uri, languageId, version, text);
+

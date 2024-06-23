@@ -14,7 +14,7 @@ public:
     using ElementPtr = std::shared_ptr<T>;
 
 public:
-    SafeQueue(size_t uCapacity = 512)
+    SafeQueue(size_t uCapacity = 1024)
         : m_uCapacity(uCapacity)
     {
     }

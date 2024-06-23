@@ -2,8 +2,18 @@
 
 #include <stdlib.h>
 
-#include <QFileInfo>
+#include <QFile>
 
+#include <QFileInfo>
+#include <QtConcurrent>
+#include <QElapsedTimer>
+#include <QCoreApplication>
+#include <QRegularExpression>
+#include <QRegularExpressionMatch>
+
+#include <qmljs/qmljslink.h>
+#include <qmljs/qmljscheck.h>
+#include <qmljs/qmljscontext.h>
 
 #include "utils/qrcparser.h"
 #include "utils/mimeutils.h"
@@ -13,7 +23,7 @@
 #include "common/utils.h"
 #include "common/lspLog.hpp"
 #include "common/lspProject.h"
-#include "common/lspDefine.h"
+#include "common/jsonUtil.hpp"
 
 using namespace QmlJS;
 
@@ -35,18 +45,8 @@ QmlLanguageModel::QmlLanguageModel(QObject *parent)
 
     connect(modelManager, &QmlJS::ModelManagerInterface::documentUpdated, this, &QmlLanguageModel::onDocumentUpdated);
     connect(modelManager, &QmlJS::ModelManagerInterface::projectInfoUpdated, this, &QmlLanguageModel::onProjectInfoUpdated);
-}
 
-bool QmlLanguageModel::updateProjectInfo()
-{
-    auto project = ProjectExplorer::Project::Instance();
-    auto modelManager = ModelManagerInterface::instance();
-
-    auto projectInfo = creatProjectInfo();
-
-    /* 更新完毕后触发 ModelManagerInterface::projectInfoUpdated */
-    modelManager->updateProjectInfo(projectInfo, project.get());
-    return true;
+    m_bValid.store(false);
 }
 
 QmlLanguageModel::ProjectInfo QmlLanguageModel::creatProjectInfo()
@@ -102,41 +102,325 @@ QmlLanguageModel::ProjectInfo QmlLanguageModel::creatProjectInfo()
     projectInfo.extendedBundle = projectInfo.activeBundle;
 
     /* 查找原始资源 */
-    auto sourceFolders = project->getSourceFolder();
-    if(sourceFolders.size() <= 0){
-        projectInfo.sourceFiles = querySources(project->getProjectFolder());
+    if(project->sizeSourceFile() <= 0){
+        auto sourceFolders = project->getSourceFolder();
+        if(sourceFolders.size() <= 0){
+            projectInfo.sourceFiles = querySources(project->getProjectFolder());
+        }else{
+            projectInfo.sourceFiles = querySources(sourceFolders);
+        }
+
+        projectInfo.sourceFiles = Utils::filteredUnique(projectInfo.sourceFiles);
+        project->appendSourceFile(projectInfo.sourceFiles);
     }else{
-        projectInfo.sourceFiles = querySources(sourceFolders);
+        for (auto & file : project->getSourceFiles())
+        {
+            projectInfo.sourceFiles.append(file);
+        }
     }
 
-    /* 去重 */
-    projectInfo.sourceFiles = Utils::filteredUnique(projectInfo.sourceFiles);
     projectInfo.allResourceFiles = Utils::filteredUnique(projectInfo.allResourceFiles);
     projectInfo.applicationDirectories = Utils::filteredUnique(projectInfo.applicationDirectories);
 
     return projectInfo;
 }
 
+bool QmlLanguageModel::restProjectInfo()
+{
+    // model 在更新 ProjectInfo , model 无效
+    m_bValid.store(false);
+
+    auto project = ProjectExplorer::Project::Instance();
+    auto modelManager = ModelManagerInterface::instance();
+
+    auto projectInfo = creatProjectInfo();
+
+    /* 更新完毕后触发 ModelManagerInterface::projectInfoUpdated */
+    modelManager->updateProjectInfo(projectInfo, project.get());
+
+    // // projectInfo 更新后，再重新刷新
+    m_futureModelUpdate = QtConcurrent::run([](){
+        auto mm = ModelManagerInterface::instance();
+        mm->test_joinAllThreads();
+
+        auto model = QmlLanguageModel::Instance();
+        model->setValid(true);
+    });
+    return true;
+}
+
+void QmlLanguageModel::onProjectInfoUpdated(const ProjectInfo &project) {
+    // 对所有的 qrc 文件进行检测
+    for(auto & file : project.allResourceFiles){
+        auto parse = Utils::QrcParser::parseQrcFile(file.toString(), QString());
+        auto json = diagnosticMsgToJson(file.toString(), parse->errorMessages());
+        emit sigDiagnosticMessageUpdated(json);
+    }
+}
+
+bool QmlLanguageModel::updateSourceFile()
+{
+    auto modelManager = ModelManagerInterface::instance();
+    auto project = ProjectExplorer::Project::Instance();
+    ASSERT_RETURN(modelManager != nullptr && project != nullptr, "modelManager == nullptr || project == nullptr" ,false);
+    
+    Utils::FilePaths paths;
+    for (auto & path : project->getSourceFiles())
+    {
+        paths.append(path);
+    }
+    
+    modelManager->updateSourceFiles(paths, true);
+    return true;
+}
+
 bool QmlLanguageModel::updateSourceFile(const QString &strFile)
 {
     auto modelManager = ModelManagerInterface::instance();
-    ASSERT_RETURN(modelManager != nullptr, "modelManager == nullptr" ,false);
+    auto project = ProjectExplorer::Project::Instance();
+    ASSERT_RETURN(modelManager != nullptr && project != nullptr, "modelManager == nullptr || project == nullptr" ,false);
 
     // qrc 文件
     if(strFile.endsWith(".qrc") == true){
         auto parse = Utils::QrcParser::parseQrcFile(strFile, QString());
-        auto msg = parse->errorMessages();
-        if(parse->isValid() == false){
-            
-            // TODO - 发送错误信息
+        auto json = diagnosticMsgToJson(strFile, parse->errorMessages());
+        emit sigDiagnosticMessageUpdated(json);
 
-            return false;
-        }
+        if(parse->isValid() == false) return false;
+    }
+
+    // qmldir 文件
+    if(strFile.endsWith("/qmldir")){
+        resetModle();
+        return true;
     }
 
     modelManager->updateSourceFiles({Utils::FilePath::fromString(strFile)}, false);
     return true;
 }
+
+bool QmlLanguageModel::appendSourceFile(const QStringList &lstFile)
+{
+    auto modelManager = ModelManagerInterface::instance();
+    auto project = ProjectExplorer::Project::Instance();
+    ASSERT_RETURN(modelManager != nullptr && project != nullptr, "modelManager == nullptr || project == nullptr" ,false);
+
+    Utils::FilePaths paths;
+    for (auto & strFile : lstFile)
+    {
+        // qrc 文件
+        if(strFile.endsWith(".qrc") == true){
+            auto parse = Utils::QrcParser::parseQrcFile(strFile, QString());
+            auto json = diagnosticMsgToJson(strFile, parse->errorMessages());
+            emit sigDiagnosticMessageUpdated(json);
+
+            if(parse->isValid() == false) return false;
+        }
+
+        paths.append(Utils::FilePath::fromString(strFile));
+    }
+
+    project->appendSourceFile(paths);
+    modelManager->updateSourceFiles(paths, false);
+    return true;
+}
+
+void QmlLanguageModel::resetModle() {
+    auto mm = ModelManagerInterface::instance();
+
+    setValid(false);
+    mm->resetCodeModel();
+
+    m_futureModelUpdate = QtConcurrent::run([=](){
+        auto mm = ModelManagerInterface::instance();
+        mm->test_joinAllThreads();
+
+        auto model = QmlLanguageModel::Instance();
+        model->setValid(true);
+
+        model->setCurrFocusFile(QString());
+        auto projectInfo = mm->projectInfo(ProjectExplorer::Project::Instance());
+        mm->updateSourceFiles(projectInfo.sourceFiles, false);
+    });
+}
+
+void QmlLanguageModel::waitModleUpdate() {
+    if(m_futureModelUpdate.isValid()){
+        m_futureModelUpdate.waitForFinished();
+    }
+
+    m_futureModelUpdate = QFuture<void>();
+}
+
+void QmlLanguageModel::waitModelManagerUpdate()
+{
+    auto mm = ModelManagerInterface::instance();
+    mm->test_joinAllThreads();
+}
+
+bool QmlLanguageModel::isValid()
+{
+    return m_bValid;
+}
+
+void QmlLanguageModel::onDocumentUpdated(QmlJS::Document::Ptr doc) {
+    JsonPtr diagnosticJson;
+    auto strPath = doc->fileName().toString();
+
+    // 等模型第一次初始化完成，才有效
+    if(m_bValid == false) return;
+
+    // NOTE - 当前正专注的文件与检测不文件不是同一个就跳过，不然会有很多 qml 文件
+    auto currFocus = getCurrFocusFile();
+    if(currFocus.isEmpty() == true){
+        auto project = ProjectExplorer::Project::Instance();
+        if(project->containSourceFile(strPath) == false) return;
+    }else{
+        if(currFocus != strPath) return;
+    }
+
+    // 语法正确，需要更新 m_currSemantic
+    if (doc->ast()) {
+        auto mm = ModelManagerInterface::instance();
+
+        bool bRes = false;
+        auto content = loadFile(strPath, bRes);
+        if(bRes == false) return;
+
+        QTextDocumentPtr qdoc = QTextDocumentPtr(new QTextDocument());
+        qdoc->setPlainText(content);
+
+        QmlJS::SemanticInfo info = QmlJS::SemanticInfo::makeNewSemanticInfo(doc, mm->snapshot(), qdoc);
+        setCurrentSemantic(info);
+ 
+        diagnosticJson = diagnosticMsgToJson(strPath, info.staticAnalysisMessages, info.semanticMessages);
+    }else{
+        diagnosticJson = diagnosticMsgToJson(strPath,doc->diagnosticMessages());
+    }
+
+    emit sigDiagnosticMessageUpdated(diagnosticJson);
+}
+
+
+
+JsonPtr QmlLanguageModel::diagnosticMsgToJson(const QString & path, const QList<QmlJS::DiagnosticMessage> &lstMsg)
+{
+    auto jsonPtr = std::make_shared<Json>(JsonUtil::DiagnosticsMessage(filePathToUrl(path)));
+    auto & lstDiagnostic = (*jsonPtr)["diagnostics"];
+
+    for(auto & msg : lstMsg){
+        if(msg.isValid() == false) continue;
+
+        // 错误位置
+        RANGE_S range;
+        range.start.line = msg.loc.startLine - 1;
+        range.start.character = msg.loc.startColumn - 1;
+        range.end.line = range.start.line;
+        range.end.character = msg.loc.length + msg.loc.startColumn - 1;
+
+        DIAGNOSTIC_SEVERITY_E enType = DIAGNOSTIC_SEVERITY_E::DS_INFORMATION;
+        if(msg.isError() == true) enType = DIAGNOSTIC_SEVERITY_E::DS_ERROR;
+        if(msg.isWarning() == true) enType = DIAGNOSTIC_SEVERITY_E::DS_WARNING;
+
+        lstDiagnostic.push_back(
+            JsonUtil::Diagnostics(range, enType, "qml", OwO::QStringToUtf8(msg.message))
+        );
+    } 
+    return jsonPtr;
+}
+
+JsonPtr QmlLanguageModel::diagnosticMsgToJson(const QString & path, const QStringList &lstMsg)
+{
+    static QRegularExpression re(R"(line ([0-9]+), col ([0-9]+))");
+    auto jsonPtr = std::make_shared<Json>(JsonUtil::DiagnosticsMessage(filePathToUrl(path)));
+    auto & lstDiagnostic = (*jsonPtr)["diagnostics"];
+
+    for(auto & msg : lstMsg){
+        // XML error on line 7, col 0: Premature end of document.
+
+        auto start = msg.indexOf("line",0, Qt::CaseInsensitive); if(start < 0) continue;
+        auto end = msg.indexOf(":", start, Qt::CaseInsensitive); if(end < 0) continue;
+        QString strPos = msg.mid(start, end - start);
+
+        QRegularExpressionMatch match = re.match(strPos);
+        if(match.hasMatch() == false) continue;
+
+        RANGE_S range;
+        range.start.line = match.captured(1).toLongLong() - 1;
+        range.start.character = match.captured(2).toLongLong() - 1;
+        range.end.line = range.start.line;
+        range.end.character = range.start.character + 1;
+
+        lstDiagnostic.push_back(
+            JsonUtil::Diagnostics(range, DIAGNOSTIC_SEVERITY_E::DS_ERROR, "qml", OwO::QStringToUtf8(msg.mid(end + 1)))
+        );
+
+    } 
+    return jsonPtr;
+}
+
+JsonPtr QmlLanguageModel::diagnosticMsgToJson(const QString &path, const QList<QmlJS::StaticAnalysis::Message> & lstAnalysisMsg, const QList<QmlJS::DiagnosticMessage> & lstDiagnostMsg)
+{
+    auto jsonPtr = std::make_shared<Json>(JsonUtil::DiagnosticsMessage(filePathToUrl(path)));
+    auto & lstDiagnostic = (*jsonPtr)["diagnostics"];
+
+    for(auto & msg : lstDiagnostMsg){
+        if(msg.isValid() == false) continue;
+
+        // 错误位置
+        RANGE_S range;
+        range.start.line = msg.loc.startLine - 1;
+        range.start.character = msg.loc.startColumn - 1;
+        range.end.line = range.start.line;
+        range.end.character = msg.loc.length + msg.loc.startColumn - 1;
+
+        DIAGNOSTIC_SEVERITY_E enType = DIAGNOSTIC_SEVERITY_E::DS_INFORMATION;
+        if(msg.isError() == true) enType = DIAGNOSTIC_SEVERITY_E::DS_ERROR;
+        if(msg.isWarning() == true) enType = DIAGNOSTIC_SEVERITY_E::DS_WARNING;
+
+        lstDiagnostic.push_back(
+            JsonUtil::Diagnostics(range, enType, "qml", OwO::QStringToUtf8(msg.message))
+        );
+    }
+
+    for (auto & msg : lstAnalysisMsg)
+    {
+        if(msg.isValid() == false) continue;
+
+        auto diagnost =  msg.toDiagnosticMessage();
+
+        RANGE_S range;
+        range.start.line = diagnost.loc.startLine - 1;
+        range.start.character = diagnost.loc.startColumn - 1;
+        range.end.line = range.start.line;
+        range.end.character = diagnost.loc.length + diagnost.loc.startColumn - 1;
+
+        DIAGNOSTIC_SEVERITY_E enType = DIAGNOSTIC_SEVERITY_E::DS_INFORMATION;
+        switch (msg.severity)
+        {
+        case QmlJS::Severity::Error: 
+            enType = DIAGNOSTIC_SEVERITY_E::DS_ERROR; break;
+        case QmlJS::Severity::ReadingTypeInfoWarning:
+        case QmlJS::Severity::Warning: 
+            enType = DIAGNOSTIC_SEVERITY_E::DS_WARNING; break;
+        case QmlJS::Severity::Hint: 
+            enType = DIAGNOSTIC_SEVERITY_E::DS_HINT; break;
+        case QmlJS::Severity::MaybeError: 
+        case QmlJS::Severity::MaybeWarning: 
+            enType = DIAGNOSTIC_SEVERITY_E::DS_INFORMATION; break;
+        default:
+            break;
+        }
+
+        lstDiagnostic.push_back(
+            JsonUtil::Diagnostics(range, enType, "qml", OwO::QStringToUtf8(diagnost.message))
+        );
+    }
+    
+    return jsonPtr;
+}
+
+
 
 QList<Utils::FilePath> QmlLanguageModel::querySources(const QString & strFolder)
 {
@@ -177,18 +461,36 @@ QList<Utils::FilePath> QmlLanguageModel::querySources(const QStringList & lstFol
      return res;
 }
 
-void QmlLanguageModel::onDocumentUpdated(QmlJS::Document::Ptr doc) {
-    if (doc->ast()) {
-        // 语法正确，需要更新 m_currentSemantic
-        QmlJS::SemanticInfo info;
+std::string QmlLanguageModel::filePathToUrl(const QString &strPath)
+{
+    QString url = "file:///" + QUrl::toPercentEncoding(strPath,"/.");
+    return OwO::QStringToUtf8(url);
+}
 
-        setCurrentSemantic(info);
+QByteArray QmlLanguageModel::loadFile(const QString &strPath, bool &bRes)
+{
+    bRes = true;
+    QByteArray content;
+    QFile file(strPath);
+
+    ASSERT_RETURN(file.exists() == true, "file is not exist", bRes = false, content);
+
+    // NOTE - Qfile 读取文件有概率会为空
+    BLOCK_TRY(4,0){
+        ASSERT_RETURN(file.open(QIODevice::ReadOnly) == true, "failed to open file", bRes = false, content);
+        content = file.readAll();
+        if(content.isEmpty() == false) TRY_BREAK;
+        file.close();
+
+        // 等待
+        QElapsedTimer timer;
+        timer.start();
+        while (timer.elapsed() < 200)
+        {
+            QCoreApplication::processEvents();
+        }
     }
-
-    // 错误信息
-    emit sigDiagnosticMessageUpdated(doc->diagnosticMessages());
+    return content;
 }
 
-void QmlLanguageModel::onProjectInfoUpdated(const ProjectInfo &pinfo) {
 
-}
