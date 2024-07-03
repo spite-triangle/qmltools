@@ -9,7 +9,7 @@ try{
 }
 catch (const InterruptException &e)
 {
-    return handleInterrupt();
+    return handleInterrupt(*req, *resp);
 }
 
 bool Handler::run(const JsonPtr &req)
@@ -18,7 +18,7 @@ try{
 }
 catch (const InterruptException &e)
 {
-    return handleInterrupt();
+    return handleInterrupt(*req);
 }
 
 bool Handler::stop() {
@@ -26,8 +26,9 @@ bool Handler::stop() {
     return true;
 }
 
-void Handler::checkInterrupt() {
+bool Handler::checkInterrupt() {
     if(m_bInterrupt == true){
         throw InterruptException("taks Interrupt");
     }
+    return m_bInterrupt;
 }

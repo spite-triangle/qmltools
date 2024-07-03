@@ -26,7 +26,7 @@ public:
 
 protected:
     /* 中断任务 */
-    void checkInterrupt();
+    bool checkInterrupt();
 
     /* 处理请求 */
     virtual bool handleMessage(const Json & req, Json & resp){ return false;};
@@ -35,7 +35,8 @@ protected:
     virtual bool handleNotification(const Json & req){ return false; };
 
     /* 中断处理 */
-    virtual bool handleInterrupt(){ return true; };
+    virtual bool handleInterrupt(const Json & req){ return true; };
+    virtual bool handleInterrupt(const Json & req, Json & resp){ return true; };
 
 protected:
     bool m_bInterrupt;

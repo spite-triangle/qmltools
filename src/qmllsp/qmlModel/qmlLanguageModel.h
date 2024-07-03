@@ -10,7 +10,7 @@
 #include <QByteArray>
 
 #include "qmljs/qmljsdocument.h"
-#include "qmljs/qmljsmodelmanagerinterface.h"
+#include "qmlModel/qmljsmodelmanager.h"
 
 #include "common/utils.h"
 #include "common/lspDefine.h"
@@ -27,26 +27,31 @@ public:
 
     QmlLanguageModel(QObject* parent = nullptr);
 
-    /* 更新配置信息 */
-    bool restProjectInfo();
+    /* 根据 Project 配置，创建 ProjectInfo */
+    ProjectInfo creatProjectInfo();
 
+    /* 更新模型 */
+    bool restProjectInfo();
     void resetModle();
     void waitModleUpdate();
     void waitModelManagerUpdate();
-
-    /* 根据 Project 配置，创建 ProjectInfo */
-    ProjectInfo creatProjectInfo();
     
     bool updateSourceFile();
     bool updateSourceFile(const QString & strFile);
     bool appendSourceFile(const QStringList & lstFile);
 
+    /* 文档 */
+    void openFile(const QString & path, int revision = 0);
+    void closeFile(const QString & path);
+    void updateFile(const QString & path, const QString & content);
+    Json formatFile(const QString & path, uint32_t uTableSize);
+    Json queryColor(const QString & path);
 
     bool isValid();
     void setValid(bool bValid){m_bValid.store(bValid);};
 
     MUT_FUNC_SET_GET(m_muteSemantic, QmlJS::SemanticInfo,  m_currSemantic, CurrentSemantic);
-    MUT_FUNC_SET_GET(m_muteFocusFile, QString, m_currFocusFile, CurrFocusFile);
+    MUT_FUNC_SET_GET(m_muteFocus, QString, m_currFocusFile, CurrFocusFile);
 
 signals:
     void sigDiagnosticMessageUpdated(const JsonPtr & json);
@@ -73,7 +78,7 @@ private:
 private:
     std::atomic_bool m_bValid; // 当前模型是否有效
 
-    std::mutex m_muteFocusFile;    
+    std::mutex m_muteFocus;    
     QString m_currFocusFile; // 当前正专注的文件
 
     QFuture<void> m_futureModelUpdate; // 模型创建

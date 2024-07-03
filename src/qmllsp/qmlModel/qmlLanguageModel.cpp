@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 #include <QFile>
-
 #include <QFileInfo>
 #include <QtConcurrent>
 #include <QElapsedTimer>
@@ -14,6 +13,7 @@
 #include <qmljs/qmljslink.h>
 #include <qmljs/qmljscheck.h>
 #include <qmljs/qmljscontext.h>
+#include <qmljs/qmljsreformatter.h>
 
 #include "utils/qrcparser.h"
 #include "utils/mimeutils.h"
@@ -24,6 +24,9 @@
 #include "common/lspLog.hpp"
 #include "common/lspProject.h"
 #include "common/jsonUtil.hpp"
+#include "common/jsonSerializer.hpp"
+
+#include "qmlModel/qmljsOpenedFileManager.h"
 
 using namespace QmlJS;
 
@@ -35,13 +38,18 @@ bool HasRelocatableFlag(const QVersionNumber & version){
             || version >= QVersionNumber(5, 1, 0);
 }
 
+double ParseHexChannel(QString hex, bool & ok){
+    int hexnum = hex.toInt(&ok,16);
+    if(ok == false) return 0.;
+    return hexnum / 255.0f;
+}
 
 } // namespace Internal
 
 QmlLanguageModel::QmlLanguageModel(QObject *parent)
     : QObject(parent)
 {
-    auto modelManager = new ModelManagerInterface();
+    auto modelManager = new ModelManager();
 
     connect(modelManager, &QmlJS::ModelManagerInterface::documentUpdated, this, &QmlLanguageModel::onDocumentUpdated);
     connect(modelManager, &QmlJS::ModelManagerInterface::projectInfoUpdated, this, &QmlLanguageModel::onProjectInfoUpdated);
@@ -287,9 +295,7 @@ void QmlLanguageModel::onDocumentUpdated(QmlJS::Document::Ptr doc) {
         auto content = loadFile(strPath, bRes);
         if(bRes == false) return;
 
-        QTextDocumentPtr qdoc = QTextDocumentPtr(new QTextDocument());
-        qdoc->setPlainText(content);
-
+        QTextDocumentPtr qdoc(new QTextDocument(OpenedFileManager::Instance()->fileContent(currFocus)));
         QmlJS::SemanticInfo info = QmlJS::SemanticInfo::makeNewSemanticInfo(doc, mm->snapshot(), qdoc);
         setCurrentSemantic(info);
  
@@ -494,3 +500,134 @@ QByteArray QmlLanguageModel::loadFile(const QString &strPath, bool &bRes)
 }
 
 
+void QmlLanguageModel::openFile(const QString & path, int revision) {
+    OpenedFileManager::Instance()->openFile(path, revision);
+}
+
+void QmlLanguageModel::closeFile(const QString & path) {
+    OpenedFileManager::Instance()->openFile(path);
+}
+
+void QmlLanguageModel::updateFile(const QString & path, const QString & content) {
+    OpenedFileManager::Instance()->updateFile(path, content);
+}
+
+
+Json QmlLanguageModel::formatFile(const QString &path, uint32_t uTableSize)
+{
+    auto content =  OpenedFileManager::Instance()->fileContent(path);
+
+    // 解析文档基础语法
+    auto doc = Document::create(Utils::FilePath::fromString(path), Dialect::Qml);
+    doc->setSource(content);
+    doc->setLanguage(QmlJS::Dialect::Qml);
+    doc->parse();
+    if(doc->isParsedCorrectly() == false) return Json();
+
+    // 格式化
+    QString text = QmlJS::reformat(doc, uTableSize, uTableSize, 128);
+
+    // 范围
+    QTextDocument qdoc;
+    qdoc.setPlainText(content);
+    int line = qdoc.lineCount();
+    RANGE_S range;
+    range.end.line = line;
+
+    Json out = Json::array();
+    out.emplace_back(Json{
+        {"range", range},
+        {"newText", OwO::QStringToUtf8(text)}
+    });
+    return out;
+}
+
+
+Json QmlLanguageModel::queryColor(const QString &path)
+{
+    auto content =  OpenedFileManager::Instance()->fileContent(path);
+
+    QList<RANGE_S> lstRange;
+    QList<QString> lstSegment;
+
+    QStringList lines = content.split("\n");
+    for (size_t row = 0; row < lines.size(); ++row)
+    {
+        auto & line = lines[row];
+        int start = 0;
+        for(size_t col = 0 ; col < line.size() ; ++ col){
+            auto & ch = line[col];
+
+            // 左边的 "
+            if(ch != '\"') continue;
+            start = col;
+
+            // 右边的 "
+            while (++ col < line.size())
+            {
+                if(line[col] == '\"') break;
+            }
+            if(col >= line.size()) break;
+
+            // #123456 或者 #12345678 
+            auto segment = line.mid(start + 1, col - start - 1); 
+            if((segment.size() == 7 || segment.size() == 9) && segment.startsWith("#")){
+                RANGE_S range;
+                range.start.line = row;
+                range.start.character = start + 1;
+                range.end.line = row;
+                range.end.character = col - 1;
+
+                lstRange.push_back(range);
+                lstSegment.push_back(segment.mid(1));
+            }
+        }
+    }
+    
+    // 重新对数据进行筛选
+    Json::array_t colors;
+    for(size_t i =0 ; i < lstRange.size() ; ++i){
+        auto & range = lstRange[i];
+        auto & segment = lstSegment[i];
+
+        // ARGB
+        double a = 1.0,r = 1.0,g = 1.0,b = 1.0;
+        bool bOk = true;
+        if(segment.size() == 8){
+            a = Private::ParseHexChannel("0x" + segment.mid(0,2), bOk);
+            if(bOk == false) continue;
+
+            r = Private::ParseHexChannel("0x" + segment.mid(2,2), bOk);
+            if(bOk == false) continue;
+
+            g = Private::ParseHexChannel("0x" + segment.mid(4,2), bOk);
+            if(bOk == false) continue;
+
+            b = Private::ParseHexChannel("0x" + segment.mid(6,2), bOk);
+            if(bOk == false) continue;
+        }else if(segment.size() == 6){
+            r = Private::ParseHexChannel("0x" + segment.mid(0,2), bOk);
+            if(bOk == false) continue;
+
+            g = Private::ParseHexChannel("0x" + segment.mid(2,2), bOk);
+            if(bOk == false) continue;
+
+            b = Private::ParseHexChannel("0x" + segment.mid(4,2), bOk);
+            if(bOk == false) continue;
+        }
+
+        Json color{
+            {"red", r},
+            {"green", g},
+            {"blue", b},
+            {"alpha", a}
+        };
+
+        colors.emplace_back(Json{
+            {"range", range},
+            {"color", color}
+        });
+    }
+
+    return colors;
+}

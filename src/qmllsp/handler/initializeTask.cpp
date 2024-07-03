@@ -16,7 +16,7 @@ bool InitializeHandler::handleMessage(const Json & req, Json & resp) {
     };
 
     Json completion_provider{
-        { "resolveProvider", false },
+        {"resolveProvider", false },
         {"triggerCharacters", Json::array()}
     };
 
@@ -56,14 +56,14 @@ bool InitializeHandler::handleMessage(const Json & req, Json & resp) {
             "capabilities",{
                 {"textDocumentSync", text_document_sync }, // 文件被修改时，如何通知服务
                 {"workspace", workspace},
-                // { "completionProvider", completion_provider }, // 代码补全
-                { "hoverProvider", true }, // 悬停提示
+                { "completionProvider", completion_provider }, // 代码补全
+                { "hoverProvider", false }, // 悬停提示
                 // { "definitionProvider", true }, // 跳转到定义
                 // { "referencesProvider", false }, // 哪些地方引用
-                // { "documentFormattingProvider", true }, // 格式化
+                { "documentFormattingProvider", true }, // 格式化
                 // { "documentRangeFormattingProvider", true },
                 // { "documentSymbolProvider", false }, // 在 vscode 中使用 @ 查找符号
-                // { "colorProvider", false}, // 拾色器
+                { "colorProvider", true}, // 拾色器
                 // { "renameProvider", true}, 
                 { "experimental", {} }, 
             }

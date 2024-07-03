@@ -24,19 +24,38 @@
 bool DocumentOpenedTask::handleNotification(const Json &req)
 {
     auto model = QmlLanguageModel::Instance();
-
     auto uri = req["params"]["textDocument"]["uri"].get<std::string>();
     QUrl url = QUrl(OwO::Utf8ToQString(uri));
+    auto strPath = url.toLocalFile();
 
-    if(url.scheme() == "file"){
-        auto strPath = url.toLocalFile();
-        model->waitModleUpdate();
+    if(url.scheme() == "file" && (strPath.endsWith(".qml", Qt::CaseInsensitive) || strPath.endsWith(".js", Qt::CaseInsensitive))){
+        model->openFile(strPath);
+    }
+    return true;
+}
 
-        if(model->isValid()){
-            model->setCurrFocusFile(strPath);
-            model->updateSourceFile(strPath);
+/* 
+    {
+        "jsonrpc": "2.0",
+        "method": "textDocument/didClose",
+        "params": {
+            "textDocument":{
+                "uri" : string,
+            }
         }
     }
+ */
+bool DocumentClosedTask::handleNotification(const Json &req)
+{
+    auto model = QmlLanguageModel::Instance();
+    auto uri = req["params"]["textDocument"]["uri"].get<std::string>();
+    QUrl url = QUrl(OwO::Utf8ToQString(uri));
+    auto strPath = url.toLocalFile();
+
+    if(url.scheme() == "file" && (strPath.endsWith(".qml", Qt::CaseInsensitive) || strPath.endsWith(".js", Qt::CaseInsensitive))){
+        model->closeFile(strPath);
+    }
+
     return true;
 }
 
@@ -68,6 +87,22 @@ bool DocumentOpenedTask::handleNotification(const Json &req)
  */
 bool DocumentChangedTask::handleNotification(const Json &req)
 {
+    auto model = QmlLanguageModel::Instance();
+
+    auto uri = req["params"]["textDocument"]["uri"].get<std::string>();
+    QUrl url = QUrl(OwO::Utf8ToQString(uri));
+
+    if(url.scheme() == "file"){
+        auto strPath = url.toLocalFile();
+        auto text = req["params"]["contentChanges"][0]["text"].get<std::string>();
+        model->waitModleUpdate();
+
+        if(model->isValid()){
+            model->updateFile(strPath, OwO::Utf8ToQString(text));
+            model->setCurrFocusFile(strPath);
+            model->updateSourceFile(strPath);
+        }
+    }
     return false;
 }
 
@@ -215,3 +250,4 @@ bool DocumentRenameTask::handleNotification(const Json &req)
     model->resetModle();
     return true;
 }
+

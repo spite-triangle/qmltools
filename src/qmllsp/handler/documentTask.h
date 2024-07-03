@@ -10,6 +10,14 @@ public:
     virtual bool handleNotification(const Json & req) override;
 };
 
+class DocumentClosedTask : public Handler{
+
+public:
+    /* 处理请求 */
+    virtual bool handleNotification(const Json & req) override;
+};
+
+
 class DocumentChangedTask : public Handler{
 
 public:
