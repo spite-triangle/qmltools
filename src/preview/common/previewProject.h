@@ -52,7 +52,7 @@ public:
 
 public:
     Project(QObject * p = nullptr) : QObject(p){
-        m_setting.strVersion = "qmlpreview version 1.0.0";
+        m_setting.strVersion = "qmlpreview version 1.0.1";
     }
 
     FUNC_GET(QString, m_setting.strName, Name);

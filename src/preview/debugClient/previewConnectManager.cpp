@@ -114,6 +114,10 @@ void PreviewConnectManager::onErrorMessage(const QString & strMsgText)
         if(line.isEmpty()) continue;
         CONSOLE_ERROR("%s", OwO::QStringToUtf8(line).c_str());
 
+        if(line.contains("No QML engines found") == true){
+            CONSOLE_ERROR("%s", "You should recompile your project to ensure the target executable file can run correctly.");
+        }
+
         // 重新加载空文件
         QRegularExpressionMatch match = reg.match(line);
         if(match.hasMatch() != true) continue;

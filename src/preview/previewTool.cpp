@@ -183,8 +183,6 @@ void PreviewTool::runInterface()
 {
     initCommands();
 
-
-
     std::string in;
     while (std::getline(std::cin, in))
     {

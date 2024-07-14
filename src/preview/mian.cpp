@@ -22,6 +22,7 @@ void sigHandler(int s)
 
 int main(int argc, char *argv[])
 {
+
     QCoreApplication app(argc, argv);
 
     // 接收 ctrl + c

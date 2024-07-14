@@ -89,7 +89,7 @@ Files include *.qml, *.js, *.qrc, qmldir etc.
             for(auto & val :vals){
                 QString strFile = formatPath(val);
                 checkPath(strFile, "search",CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
-                m_setting.setQrcFile.insert(std::move(strFile));
+                m_setting.setExtendSearchFolder.insert(std::move(strFile));
             }
         },            
         "Extend asset search folder. Multiple folders are separated by `,`.")
