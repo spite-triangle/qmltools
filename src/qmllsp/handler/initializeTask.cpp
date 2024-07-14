@@ -58,13 +58,13 @@ bool InitializeHandler::handleMessage(const Json & req, Json & resp) {
                 {"workspace", workspace},
                 { "completionProvider", completion_provider }, // 代码补全
                 { "hoverProvider", false }, // 悬停提示
-                // { "definitionProvider", true }, // 跳转到定义
-                // { "referencesProvider", false }, // 哪些地方引用
+                { "definitionProvider", true}, // 跳转到定义
+                { "referencesProvider", true}, // 哪些地方引用
                 { "documentFormattingProvider", true }, // 格式化
                 // { "documentRangeFormattingProvider", true },
                 // { "documentSymbolProvider", false }, // 在 vscode 中使用 @ 查找符号
                 { "colorProvider", true}, // 拾色器
-                // { "renameProvider", true}, 
+                { "renameProvider", true}, 
                 { "experimental", {} }, 
             }
         }

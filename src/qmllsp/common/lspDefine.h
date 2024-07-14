@@ -16,9 +16,10 @@ struct POSITION_S{
     uint64_t character = 0;
 };
 
+/* 区间取值范围为： [start, end) */
 struct RANGE_S{
     POSITION_S start;
-    POSITION_S end;
+    POSITION_S end;  	
 };
 
 struct TEXT_DOCUMENT_ITEM_S{

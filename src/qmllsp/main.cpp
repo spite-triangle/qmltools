@@ -23,7 +23,6 @@
 
 int main(int argc, char *argv[])
 {
-
     QCoreApplication app(argc, argv);
 
     auto project = ProjectExplorer::Project::Instance();

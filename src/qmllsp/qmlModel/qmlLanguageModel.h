@@ -41,11 +41,14 @@ public:
     bool appendSourceFile(const QStringList & lstFile);
 
     /* 文档 */
-    void openFile(const QString & path, int revision = 0);
+    void openFile(const QString & path, int revision);
     void closeFile(const QString & path);
-    void updateFile(const QString & path, const QString & content);
+    void updateFile(const QString & path, const QString & content,int revision);
     Json formatFile(const QString & path, uint32_t uTableSize);
     Json queryColor(const QString & path);
+
+    static size_t convertPosition(const QString & content,const POSITION_S & pos);
+    static std::string filePathToUrl(const QString & strPath);
 
     bool isValid();
     void setValid(bool bValid){m_bValid.store(bValid);};
@@ -72,7 +75,6 @@ private:
     JsonPtr diagnosticMsgToJson(const QString & path, const QStringList & lstMsg);
     JsonPtr diagnosticMsgToJson(const QString & path, const QList<QmlJS::StaticAnalysis::Message> & lstAnalysisMsg, const QList<QmlJS::DiagnosticMessage> & lstDiagnostMsg);
 
-    std::string filePathToUrl(const QString & strPath);
     QByteArray loadFile(const QString &strPath, bool &bRes);
 
 private:
@@ -81,6 +83,7 @@ private:
     std::mutex m_muteFocus;    
     QString m_currFocusFile; // 当前正专注的文件
 
+    std::mutex m_muteModelUpdate;
     QFuture<void> m_futureModelUpdate; // 模型创建
 
     BasicBundleProvider m_basicBundleProvider;

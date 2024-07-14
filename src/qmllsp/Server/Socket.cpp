@@ -146,6 +146,34 @@ socket_t InitServer(const char * ip, uint32_t port)
     return fd;
 }
 
+SOCKET_INFO_S AcceptClientTimeOut(socket_t fd, int timeOut)
+{
+     SOCKET_INFO_S client;
+	//委托内核去检测监听描述符的读缓冲区是个可读
+    fd_set fdread;
+    FD_ZERO(&fdread);
+    FD_SET(fd, &fdread);
+
+    int ret = 0;
+    struct timeval val;
+    val.tv_sec = timeOut;
+    val.tv_usec = 0;
+
+    while (1)
+    {
+        ret = select(fd+1, &fdread, NULL, NULL, &val); //设置超时
+        if (ret == 0 && errno == EINTR)  //信号中断再超时一次
+        {
+            continue;
+        }
+
+        break;
+    }
+
+    return ret > 0 ? AcceptClient(fd) : client;
+}
+
+
 SOCKET_INFO_S AcceptClient(socket_t fd)
 {
     SOCKET_INFO_S client;
@@ -158,6 +186,7 @@ SOCKET_INFO_S AcceptClient(socket_t fd)
         inet_ntop(AF_INET, &client.addr.sin_addr.S_un, ip, sizeof(ip)),
         ntohs(client.addr.sin_port)
     );
+
     return client;
 }
 

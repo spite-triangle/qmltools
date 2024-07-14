@@ -53,13 +53,13 @@ void OpenedFileManager::closeFile(const QString & path) {
     } 
 }
 
-void OpenedFileManager::updateFile(const QString & path, const QString & content) {
+void OpenedFileManager::updateFile(const QString & path, const QString & content, int revision) {
     auto filePath = Utils::FilePath::fromString(path);
 
     std::lock_guard<std::mutex> lock(m_muteOpenedFile);
     if(m_openedFiles.contains(filePath)){
         m_openedFiles[filePath].first = content;
-        m_openedFiles[filePath].second += 1;
+        m_openedFiles[filePath].second = revision;
     } 
 }
 

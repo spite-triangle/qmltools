@@ -93,7 +93,7 @@ public:
 
 private:
 
-    void checkPath(const QString & strPath, const std::string & name ,int nType);
+    bool checkPath(const QString & strPath, const std::string & name ,int nType, bool bThrow = true);
     QString formatPath(const std::string & str);
 
 private:

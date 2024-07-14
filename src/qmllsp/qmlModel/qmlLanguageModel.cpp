@@ -97,6 +97,7 @@ QmlLanguageModel::ProjectInfo QmlLanguageModel::creatProjectInfo()
     {
         projectInfo.importPaths.maybeInsert(Utils::FilePath::fromString(path), QmlJS::Dialect::Qml);
     }
+    projectInfo.importPaths.maybeInsert(projectInfo.qtQmlPath, QmlJS::Dialect::Qml);
     
     for(auto & path : project->getQrcFiles()){
         projectInfo.allResourceFiles.append(Utils::FilePath::fromString(path));
@@ -147,6 +148,11 @@ bool QmlLanguageModel::restProjectInfo()
     modelManager->updateProjectInfo(projectInfo, project.get());
 
     // // projectInfo 更新后，再重新刷新
+    std::lock_guard<std::mutex> lock(m_muteModelUpdate); 
+    if(m_futureModelUpdate.isValid()){
+        m_futureModelUpdate.waitForFinished();
+    }
+
     m_futureModelUpdate = QtConcurrent::run([](){
         auto mm = ModelManagerInterface::instance();
         mm->test_joinAllThreads();
@@ -239,6 +245,11 @@ void QmlLanguageModel::resetModle() {
     setValid(false);
     mm->resetCodeModel();
 
+    std::lock_guard<std::mutex> lock(m_muteModelUpdate); 
+    if(m_futureModelUpdate.isValid()){
+        m_futureModelUpdate.waitForFinished();
+    }
+
     m_futureModelUpdate = QtConcurrent::run([=](){
         auto mm = ModelManagerInterface::instance();
         mm->test_joinAllThreads();
@@ -253,6 +264,8 @@ void QmlLanguageModel::resetModle() {
 }
 
 void QmlLanguageModel::waitModleUpdate() {
+
+    std::lock_guard<std::mutex> lock(m_muteModelUpdate); 
     if(m_futureModelUpdate.isValid()){
         m_futureModelUpdate.waitForFinished();
     }
@@ -322,7 +335,7 @@ JsonPtr QmlLanguageModel::diagnosticMsgToJson(const QString & path, const QList<
         range.start.line = msg.loc.startLine - 1;
         range.start.character = msg.loc.startColumn - 1;
         range.end.line = range.start.line;
-        range.end.character = msg.loc.length + msg.loc.startColumn - 1;
+        range.end.character = msg.loc.length + msg.loc.startColumn;
 
         DIAGNOSTIC_SEVERITY_E enType = DIAGNOSTIC_SEVERITY_E::DS_INFORMATION;
         if(msg.isError() == true) enType = DIAGNOSTIC_SEVERITY_E::DS_ERROR;
@@ -378,7 +391,7 @@ JsonPtr QmlLanguageModel::diagnosticMsgToJson(const QString &path, const QList<Q
         range.start.line = msg.loc.startLine - 1;
         range.start.character = msg.loc.startColumn - 1;
         range.end.line = range.start.line;
-        range.end.character = msg.loc.length + msg.loc.startColumn - 1;
+        range.end.character = msg.loc.length + msg.loc.startColumn;
 
         DIAGNOSTIC_SEVERITY_E enType = DIAGNOSTIC_SEVERITY_E::DS_INFORMATION;
         if(msg.isError() == true) enType = DIAGNOSTIC_SEVERITY_E::DS_ERROR;
@@ -399,7 +412,7 @@ JsonPtr QmlLanguageModel::diagnosticMsgToJson(const QString &path, const QList<Q
         range.start.line = diagnost.loc.startLine - 1;
         range.start.character = diagnost.loc.startColumn - 1;
         range.end.line = range.start.line;
-        range.end.character = diagnost.loc.length + diagnost.loc.startColumn - 1;
+        range.end.character = diagnost.loc.length + diagnost.loc.startColumn;
 
         DIAGNOSTIC_SEVERITY_E enType = DIAGNOSTIC_SEVERITY_E::DS_INFORMATION;
         switch (msg.severity)
@@ -505,11 +518,11 @@ void QmlLanguageModel::openFile(const QString & path, int revision) {
 }
 
 void QmlLanguageModel::closeFile(const QString & path) {
-    OpenedFileManager::Instance()->openFile(path);
+    OpenedFileManager::Instance()->closeFile(path);
 }
 
-void QmlLanguageModel::updateFile(const QString & path, const QString & content) {
-    OpenedFileManager::Instance()->updateFile(path, content);
+void QmlLanguageModel::updateFile(const QString & path, const QString & content, int revision) {
+    OpenedFileManager::Instance()->updateFile(path, content, revision);
 }
 
 
@@ -576,7 +589,7 @@ Json QmlLanguageModel::queryColor(const QString &path)
                 range.start.line = row;
                 range.start.character = start + 1;
                 range.end.line = row;
-                range.end.character = col - 1;
+                range.end.character = col;
 
                 lstRange.push_back(range);
                 lstSegment.push_back(segment.mid(1));
@@ -630,4 +643,25 @@ Json QmlLanguageModel::queryColor(const QString &path)
     }
 
     return colors;
+}
+
+size_t QmlLanguageModel::convertPosition(const QString & content, const POSITION_S &pos)
+{
+    int line = pos.line;
+    int column = pos.character;
+    int64_t position = 0;
+
+    for(auto & ch : content){
+        if(column <= 0 && line <= 0) break;
+
+        if( line > 0 && ch == '\n'){
+            --line;
+        }else if(line == 0 && column > 0){
+            --column;
+        }
+
+        ++position;
+    }
+    
+    return position;
 }

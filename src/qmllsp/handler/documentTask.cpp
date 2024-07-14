@@ -25,11 +25,12 @@ bool DocumentOpenedTask::handleNotification(const Json &req)
 {
     auto model = QmlLanguageModel::Instance();
     auto uri = req["params"]["textDocument"]["uri"].get<std::string>();
+    auto version = req["params"]["textDocument"]["version"].get<int>();
     QUrl url = QUrl(OwO::Utf8ToQString(uri));
     auto strPath = url.toLocalFile();
 
     if(url.scheme() == "file" && (strPath.endsWith(".qml", Qt::CaseInsensitive) || strPath.endsWith(".js", Qt::CaseInsensitive))){
-        model->openFile(strPath);
+        model->openFile(strPath, version);
     }
     return true;
 }
@@ -90,6 +91,7 @@ bool DocumentChangedTask::handleNotification(const Json &req)
     auto model = QmlLanguageModel::Instance();
 
     auto uri = req["params"]["textDocument"]["uri"].get<std::string>();
+    auto version = req["params"]["textDocument"]["version"].get<int>();
     QUrl url = QUrl(OwO::Utf8ToQString(uri));
 
     if(url.scheme() == "file"){
@@ -98,12 +100,12 @@ bool DocumentChangedTask::handleNotification(const Json &req)
         model->waitModleUpdate();
 
         if(model->isValid()){
-            model->updateFile(strPath, OwO::Utf8ToQString(text));
+            model->updateFile(strPath, OwO::Utf8ToQString(text),version);
             model->setCurrFocusFile(strPath);
             model->updateSourceFile(strPath);
         }
     }
-    return false;
+    return true;
 }
 
 

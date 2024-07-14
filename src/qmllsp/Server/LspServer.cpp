@@ -99,7 +99,8 @@ bool LspServer::start()
     m_serverSocket = tcp::InitServer("127.0.0.1", project->getPort());
     ASSERT_RETURN(m_serverSocket != -1, "Failed to init server socket.", false);
 
-    m_connectSocket = tcp::AcceptClient(m_serverSocket);
+    // 等 10s
+    m_connectSocket = tcp::AcceptClientTimeOut(m_serverSocket, 10000);
     ASSERT_RETURN(m_connectSocket.fd != -1, "Failed to connect client.", false);
 
 
@@ -163,7 +164,7 @@ try
         stMsg = LSP_MESSAGE_S();
     }
 }
-catch (const LspException & error){
+catch (const std::exception & error){
     LOG_ERROR("%s",error.what());
 
     auto msg = std::make_shared<Json>(R"({"jsonrpc":"2.0","method":"exit"})");
@@ -192,6 +193,7 @@ std::string LspServer::genarateSendMessage(const JsonPtr &json)
 {
     if(json == nullptr) return std::string();
 
+ 
     auto content = json->dump(4);
 
     std::string header;
@@ -213,7 +215,7 @@ bool LspServer::recv(LSP_MESSAGE_S &stMsg)
     char * buff = new char[stMsg.nLen + 1]();
     ASSERT_RETURN(tcp::RecvMsg(m_connectSocket.fd, buff, stMsg.nLen) == true, "Failed to recv content.", false)
 
-    stMsg.content = OwO::QStringToUtf8(OwO::LocalToQString(buff));
+    stMsg.content = OwO::QStringToUtf8(buff);
     return true;
 }
 

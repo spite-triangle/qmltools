@@ -40,14 +40,12 @@ bool ColorPresentationTask::handleMessage(const Json &req, Json &resp)
     int b = color["blue"].get<double>() * 255;
     int a = color["alpha"].get<double>() * 255;
 
-    std::string hex = OwO::Format("#",
+    std::string hex = OwO::Format( "#",
                             std::setw(2), std::setfill('0'),std::hex, a, 
                             std::setw(2), std::setfill('0'),std::hex, r,
                             std::setw(2), std::setfill('0'),std::hex, g, 
                             std::setw(2), std::setfill('0'),std::hex, b);
 
-    range.start.character = 4;
-    range.end.character = 5;
     Json res{
         {"label", hex},
         {"textEdit",{

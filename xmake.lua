@@ -25,18 +25,8 @@ else
     set_targetdir("bin/release_win/")
 end 
 
-target("demo")
 
-   add_rules("qt.quickapp")
-
-   add_files("example/demo/main.cpp",
-             "example/demo/main.qrc",
-             "example/asset.qrc"
-             )            
-
-   set_targetdir("bin/demo")
-
-target("preview")
+target("qmlpreview")
     -- add_defines("DOCT_TEST")
     add_rules("qt.console")
     add_frameworks("QtNetwork")

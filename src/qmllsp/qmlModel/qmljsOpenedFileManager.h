@@ -20,9 +20,9 @@ public:
 
     MUT_FUNC_GET(m_muteOpenedFile, Table_t, m_openedFiles, OpenedFiles);
 
-    void openFile(const QString & path, int revision = 0);
+    void openFile(const QString & path, int revision);
     void closeFile(const QString & path);
-    void updateFile(const QString & path, const QString & content);
+    void updateFile(const QString & path, const QString & content, int revision);
     QString fileContent(const QString & path);
 
 private:

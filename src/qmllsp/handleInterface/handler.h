@@ -2,6 +2,7 @@
 #define PROVIDER_H
 
 #include <memory>
+#include <functional>
 
 #include <QJsonObject>
 
@@ -14,6 +15,7 @@ class Handler{
 
 public:
     using Ptr = std::shared_ptr<Handler>;
+    using StopFcn_t = std::function<void()>;
 
 public:
     virtual ~Handler() = default;
@@ -21,6 +23,7 @@ public:
     bool run(const JsonPtr & req);
     bool run(const JsonPtr & req, JsonPtr resp);
     bool stop();
+    void registerStop(StopFcn_t && fcn);
     
     FUNC_SET(std::shared_ptr<LspServer>, m_server, Server);
 
@@ -40,6 +43,7 @@ protected:
 
 protected:
     bool m_bInterrupt;
+    std::function<void()> m_fcnStop;
     std::shared_ptr<LspServer> m_server;
 };
 

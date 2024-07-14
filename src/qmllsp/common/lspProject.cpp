@@ -25,7 +25,7 @@ The tool is a QML Language Server.
         [&](const std::string & val){
             auto path = formatPath(val);
             checkPath(path, "typeDescription", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
-            m_setting.strTypeDescriptionFolder = path; 
+            m_setting.strTypeDescriptionFolder = path;
         }, 
         "The `qml-type-descriptions` folder.");
 
@@ -41,7 +41,8 @@ The tool is a QML Language Server.
         [&](const std::vector<std::string> & vals){
             for(auto & val : vals){
                 auto path = formatPath(val);
-                checkPath(path, "targetFolder", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
+                bool bFlag = checkPath(path, "targetFolder", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST, false);
+                if(bFlag == false) continue;
                 m_setting.lstTargetFolder.append(path);
             }
         },
@@ -53,7 +54,8 @@ The tool is a QML Language Server.
             for (auto & val : vals)
             {
                 auto path = formatPath(val);
-                checkPath(path, "qml2import", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
+                bool bFlag = checkPath(path, "qml2import", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST, false);
+                if(bFlag == false) continue;
                 m_setting.lstQml2ImportPath.append(path);
             }
             
@@ -66,7 +68,9 @@ The tool is a QML Language Server.
             for (auto & val : vals)
             {
                 auto path = formatPath(val);
-                checkPath(path, "imports", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
+                bool bFlag = checkPath(path, "imports", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST, false);
+                if(bFlag == false) continue;
+
                 m_setting.lstImportPaths.append(path);
             }
             
@@ -79,7 +83,9 @@ The tool is a QML Language Server.
             for (auto & val : vals)
             {
                 auto path = formatPath(val);
-                checkPath(path, "qrc", CHECK_TYPE_E::TYPE_FILE | CHECK_TYPE_E::TYPE_EXIST);
+                bool bFlag = checkPath(path, "qrc", CHECK_TYPE_E::TYPE_FILE | CHECK_TYPE_E::TYPE_EXIST);
+                if(bFlag == false) continue;
+
                 m_setting.lstQrcPath.append(path);
             }
             
@@ -93,7 +99,9 @@ The tool is a QML Language Server.
             for (auto & val : vals)
             {
                 auto path = formatPath(val);
-                checkPath(path, "src", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
+                bool bFlag = checkPath(path, "src", CHECK_TYPE_E::TYPE_FOLDER | CHECK_TYPE_E::TYPE_EXIST);
+                if(bFlag == false) continue;
+
                 m_setting.lstSourceFolder.append(path);
             }
             
@@ -105,7 +113,7 @@ The tool is a QML Language Server.
         app.parse(argc, argv);
     } catch (const CLI::ParseError &e) {
         return app.exit(e);
-    }  
+    } 
     return 0;
 }
 
@@ -130,7 +138,7 @@ QString ProjectExplorer::Project::parentFolder(const QString &strPath)
     return QString();
 }
 
-void ProjectExplorer::Project::checkPath(const QString &strPath, const std::string & name,int nType)
+bool ProjectExplorer::Project::checkPath(const QString &strPath, const std::string & name,int nType, bool bThrow)
 {
     QFileInfo file(strPath);
     std::string error;
@@ -152,10 +160,13 @@ void ProjectExplorer::Project::checkPath(const QString &strPath, const std::stri
             error = "Path isn't a valid folder path.";
             break;
         }
-        return;
+        return true;
     }
 
-    throw CLI::ValidationError(name ,error + " Check your settings and folder separator is `\\` or `/`.");
+    if(bThrow){
+        throw CLI::ValidationError(name ,error + " Check your settings and folder separator is `\\` or `/`.");
+    }
+    return false;
 }
 
 QString ProjectExplorer::Project::formatPath(const std::string &str)

@@ -18,6 +18,7 @@
 #include "common/lspLog.hpp"
 #include "common/lspProject.h"
 #include "qmlexpressionundercursor.h"
+#include "qmlModel/qmlLanguageModel.h"
 
 using namespace QmlJS;
 
@@ -698,25 +699,8 @@ QmlCompletion::CompletionItems_t QmlCompletion::completeUrl(const QString &relat
 void QmlCompletion::setPosition(const POSITION_S &pos)
 {
     ASSERT_RETURN(m_semanticInfo.isValid() == true, "m_semanticInfo isn't valid.");
-
-    int line = pos.line;
-    int column = pos.character;
-    int64_t position = 0;
-
     auto content = m_semanticInfo.doc->toPlainText();
-    for(auto & ch : content){
-        if(column <= 0 && line <= 0) break;
-
-        if( line > 0 && ch == '\n'){
-            --line;
-        }else if(line == 0 && column > 0){
-            --column;
-        }
-
-        ++position;
-    }
-
-    m_docPos = position;
+    m_docPos = QmlLanguageModel::convertPosition( content, pos);
 }
 
 void QmlCompletion::setCheckPoint(std::function<bool()> &&fcn)

@@ -12,10 +12,21 @@
 #include "common/previewProject.h"
 #include "debugClient/previewConnectManager.h"
 
+#include <csignal>
+
+void sigHandler(int s)
+{
+    std::signal(s, SIG_DFL);
+    qApp->quit();
+}
+
 int main(int argc, char *argv[])
 {
-
     QCoreApplication app(argc, argv);
+
+    // 接收 ctrl + c
+    std::signal(SIGINT,  sigHandler);
+    std::signal(SIGTERM, sigHandler);
 
     auto project =  ProjectExplorer::Project::Instance();
     project->setRunFolder(QCoreApplication::applicationDirPath());
@@ -58,7 +69,8 @@ int main(int argc, char *argv[])
     QProcess * target = nullptr;
     if(project->getTarget().isEmpty() == false){
         target = new QProcess(&app);
-        target->setEnvironment(QProcess::systemEnvironment());
+        auto env = QProcessEnvironment::systemEnvironment();
+        target->setProcessEnvironment(env);
  
         // 程序启动成功，便激活 preview
         QObject::connect(target, &QProcess::stateChanged, [&](QProcess::ProcessState state) {

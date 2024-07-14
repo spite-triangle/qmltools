@@ -30,7 +30,7 @@ typedef int socket_t;
 
 struct SOCKET_INFO_S{
     sockaddr_in addr;
-	socket_t fd;
+	socket_t fd = -1;
 };
 
 
@@ -44,6 +44,7 @@ int CloseSocket(socket_t fd);
 
 socket_t InitServer(const char * ip, uint32_t port);
 
+SOCKET_INFO_S AcceptClientTimeOut(socket_t fd, int timeOut);
 SOCKET_INFO_S AcceptClient(socket_t fd);
 
 int ConnectServer(socket_t fd, const char * ip, uint32_t port);
