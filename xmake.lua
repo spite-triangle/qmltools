@@ -63,11 +63,4 @@ target("qmllsp")
               "src/common/*.cpp")
 
 
-target("debug")
-    add_rules("qt.console")
-
-    add_linkdirs("lib/qtcreator")
-    add_links("QmlJS","Utils","LanguageUtils")
-
-
 

@@ -625,7 +625,7 @@ QmlCompletion::CompletionItems_t QmlCompletion::completeGlobal(const QmlJS::Comp
     // add qml extra words
     if(checkPoint()) return CompletionItems_t();
     if (doQmlKeywordCompletion && isQmlFile) {
-        QStringList lstExtraWords = {"property", "signal", "import"};  
+        QStringList lstExtraWords = {"property", "signal", "import", "alias", "readonly"};  
 
         if (!doJsKeywordCompletion){
             lstExtraWords.append({"default", "function"});
