@@ -521,6 +521,11 @@ void QmlLanguageModel::closeFile(const QString & path) {
     OpenedFileManager::Instance()->closeFile(path);
 }
 
+QString QmlLanguageModel::fileContent(const QString &path)
+{
+    return OpenedFileManager::Instance()->fileContent(path);
+}
+
 void QmlLanguageModel::updateFile(const QString & path, const QString & content, int revision) {
     OpenedFileManager::Instance()->updateFile(path, content, revision);
 }

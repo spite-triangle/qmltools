@@ -109,7 +109,13 @@ bool ConfigTask::handleNotification(const Json &req)
     if(bChanged == true){
         model->restProjectInfo();
         model->waitModleUpdate();
+
+        auto strPath = model->getCurrFocusFile();
         model->resetModle();
+        if(strPath.isEmpty() == false){
+            model->setCurrFocusFile(strPath);
+            model->updateSourceFile(strPath);
+        } 
     }
     return true;
 }

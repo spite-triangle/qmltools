@@ -43,6 +43,7 @@ public:
     /* 文档 */
     void openFile(const QString & path, int revision);
     void closeFile(const QString & path);
+    QString fileContent(const QString & path);
     void updateFile(const QString & path, const QString & content,int revision);
     Json formatFile(const QString & path, uint32_t uTableSize);
     Json queryColor(const QString & path);

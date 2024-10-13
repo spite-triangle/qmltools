@@ -2,6 +2,8 @@
 
 
 #include <QUrl>
+#include <QTextDocument>
+#include <QSharedPointer>
 
 #include "utils/filepath.h"
 
@@ -72,7 +74,10 @@ bool CompletionTask::handleMessage(const Json &req, Json &resp)
 
         POSITION_S pos = req["params"]["position"];
 
+        auto doc = QmlJS::QTextDocumentPtr(new QTextDocument(model->fileContent(path)));
+
         QmlCompletion tool;
+        tool.setCurrentDocument(doc);
         tool.setSemanticInfo(model->getCurrentSemantic());
         tool.setPosition(pos);
         tool.setCheckPoint([&](){

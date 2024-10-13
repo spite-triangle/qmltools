@@ -99,8 +99,8 @@ bool LspServer::start()
     m_serverSocket = tcp::InitServer("127.0.0.1", project->getPort());
     ASSERT_RETURN(m_serverSocket != -1, "Failed to init server socket.", false);
 
-    // 等 10s
-    m_connectSocket = tcp::AcceptClientTimeOut(m_serverSocket, 10000);
+    // 等客户端 5 分钟
+    m_connectSocket = tcp::AcceptClientTimeOut(m_serverSocket, 300000);
     ASSERT_RETURN(m_connectSocket.fd != -1, "Failed to connect client.", false);
 
 

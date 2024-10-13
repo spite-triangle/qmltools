@@ -51,6 +51,7 @@ public:
     
     struct COMPLETION_ITEM_S{
         QString text;
+        QString detail;
         COMPLETION_TYPE_E type;
     };
 
@@ -59,6 +60,7 @@ public:
 public:
 
     FUNC_SET(QmlJS::SemanticInfo, m_semanticInfo, SemanticInfo);
+    FUNC_SET(QmlJS::QTextDocumentPtr, m_currDoc, CurrentDocument);
 
     void setPosition(const POSITION_S & pos);
     void setCheckPoint(std::function<bool()> && fcn);
@@ -85,6 +87,7 @@ private:
     int64_t m_docPos; // 在文档中的绝对位置
     std::function<bool()> m_fcnCheckPoint;
 
+    QmlJS::QTextDocumentPtr m_currDoc;
     QmlJS::SemanticInfo m_semanticInfo;
 };
 

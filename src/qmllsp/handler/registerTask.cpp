@@ -19,7 +19,7 @@ void RegisterTaskToServer(LspServer::Ptr &server)
     server->registoryTaskFactory("shutdown", TaskFactoryTemplate<ShutdownTask>::makeFactory());
     server->registoryTaskFactory("exit", TaskFactoryTemplate<ExitTask>::makeFactory());
     server->registoryTaskFactory("workspace/didChangeConfiguration", TaskFactoryTemplate<ConfigTask>::makeFactory());
-    server->registoryTaskFactory("textDocument/hover", TaskFactoryTemplate<HoverTask>::makeFactory());
+    // server->registoryTaskFactory("textDocument/hover", TaskFactoryTemplate<HoverTask>::makeFactory());
     server->registoryTaskFactory("textDocument/didSave", TaskFactoryTemplate<DocumentSavedTask>::makeFactory());
     server->registoryTaskFactory("textDocument/didOpen", TaskFactoryTemplate<DocumentOpenedTask>::makeFactory());
     server->registoryTaskFactory("textDocument/didClose", TaskFactoryTemplate<DocumentClosedTask>::makeFactory());

@@ -1,7 +1,10 @@
 #include "qmlCompletion.h"
 
 #include <QUrl>
+#include <QSet>
+#include <QMap>
 #include <QTextCursor>
+#include <QTextDocument>
 
 #include <utils/algorithm.h>
 #include <qmljs/qmljsbind.h>
@@ -25,7 +28,7 @@ using namespace QmlJS;
 namespace Private
 {
 
-bool IsIdentifierChar(const QChar &c, bool atStart, bool acceptDollar)
+static bool IsIdentifierChar(const QChar &c, bool atStart, bool acceptDollar)
 {
     switch (c.unicode()) {
     case '_':
@@ -43,7 +46,7 @@ bool IsIdentifierChar(const QChar &c, bool atStart, bool acceptDollar)
     }
 }
 
-bool IsLiteral(QmlJS::AST::Node *ast)
+static bool IsLiteral(QmlJS::AST::Node *ast)
 {
     using namespace QmlJS;
     if (AST::cast<AST::StringLiteral *>(ast))
@@ -54,7 +57,58 @@ bool IsLiteral(QmlJS::AST::Node *ast)
         return false;
 }
 
-const QmlJS::Value *GetPropertyValue(const QmlJS::ObjectValue *object,
+static QString GetTypeName(const QmlJS::Value * const val){
+    if(val->asIntValue() || val->asNumberValue()){
+        return "number";
+    }else if(val->asBooleanValue()){
+        return "bool";
+    }else if(val->asColorValue()){
+        return "color";
+    }else if(auto fcn = val->asFunction()){
+        return fcn->className();
+    }else if(auto obj = val->asObjectValue()){
+        return obj->className();
+    }else if(val->asQmlEnumValue()){
+        return "enum";
+    }else if(val->asRealValue()){
+        return "real";
+    }else if(val->asNullValue()){
+        return "null";
+    }else if(val->asStringValue()){
+        return "string";
+    }else if(val->asUrlValue()){
+        return "url";
+    }else if(auto obj = val->asCppComponentValue()){
+        return obj->moduleName();
+    }else if(auto signal = val->asAstSignal()){
+        return signal->className();
+    }else{
+        return "unknow";
+    }
+}
+
+static void Convert(const QmlJS::Value * const val, QmlCompletion::COMPLETION_ITEM_S & item){
+    if(val == nullptr) return;
+
+
+    if(auto fcn = val->asFunction()){
+        item.type = QmlCompletion::TYPE_FUNCTION;
+    }else if(auto fcn = val->asMetaFunction()){
+        item.type = QmlCompletion::TYPE_FUNCTION;
+        item.detail = fcn->fakeMetaMethod().toString();
+    }else if(val->asColorValue()){
+        item.type = QmlCompletion::TYPE_COLOR;
+    }else if(auto comp = val->asCppComponentValue()){
+        item.type = QmlCompletion::TYPE_FIELD;
+        item.detail = QString("from compoent %1 %2").arg(comp->moduleName(), comp->componentVersion().toString());
+    }else if(val->asQmlEnumValue()){
+        item.type = QmlCompletion::TYPE_ENUM;
+    }else if(val->asBooleanValue() || val->asStringValue() || val->asNumberValue() || val->asRealValue() || val->asReference() || val->asIntValue() ){
+        item.type = QmlCompletion::TYPE_FIELD;
+    }
+}
+
+static const QmlJS::Value *GetPropertyValue(const QmlJS::ObjectValue *object,
                                            const QStringList &propertyNames,
                                            const QmlJS::ContextPtr &context)
 {
@@ -107,14 +161,7 @@ public:
         item.text = name;
         item.type = order;
 
-        if (const FunctionValue *func = value->asFunctionValue()) {
-            // constructors usually also have other interesting members,
-            // don't consider them pure functions and complete the '()'
-            // if (!func->lookupMember(QLatin1String("prototype"), nullptr, nullptr, false))
-            //     data = QVariant::fromValue(CompleteFunctionCall(func->namedArgumentCount() || func->isVariadic()));
-            item.type = QmlCompletion::COMPLETION_TYPE_E::TYPE_FUNCTION;
-        }
-
+        Private::Convert(value, item);
         completions->push_back(item); 
     }
 
@@ -288,21 +335,71 @@ bool QmlCompletion::checkPoint()
 Json QmlCompletion::convertToJson(const CompletionItems_t &completions)
 {
     Json res = Json::array();
+    QMap<QString, QSet<COMPLETION_TYPE_E>> mapBuffer;
+
+    // QMap<QString, int> map{
+    //     {"TYPE_DEFAULT", 0},
+    //     {"TYPE_TEXT", 1},
+    //     {"TYPE_METHOD", 2},
+    //     {"TYPE_FUNCTION", 3},
+    //     {"TYPE_CONSTRUCTOR", 4},
+    //     {"TYPE_FIELD", 5},
+    //     {"TYPE_VARIABLE", 6},
+    //     {"TYPE_CLASS", 7},
+    //     {"TYPE_INTERFACE", 8},
+    //     {"TYPE_MODULE", 9},
+    //     {"TYPE_PROPERTY", 10},
+    //     {"TYPE_UNIT", 11},
+    //     {"TYPE_VALUE", 12},
+    //     {"TYPE_ENUM", 13},
+    //     {"TYPE_KEYWORD", 14},
+    //     {"TYPE_SNIPPET", 15},
+    //     {"TYPE_COLOR", 16},
+    //     {"TYPE_FILE", 17},
+    //     {"TYPE_REFERENCE", 18},
+    //     {"TYPE_FOLDER", 19},
+    //     {"TYPE_ENUMMEMBER", 20},
+    //     {"TYPE_CONSTANT", 21},
+    //     {"TYPE_STRUCT", 22},
+    //     {"TYPE_EVENT", 23},
+    //     {"TYPE_OPERATOR", 24},
+    //     {"TYPE_TYPEPARAMETER", 25}
+    // };
+
+    // for (auto key : map.keys())
+    // {
+    //     Json item{
+    //         {"label", OwO::QStringToUtf8(key)},
+    //         {"kind", map[key]}
+    //     };
+    //     res.push_back(item);
+    // }
+    
+
     for (auto & completion : completions)
     {
+        // 去重
+        auto & set = mapBuffer[completion.text];
+        if(set.contains(completion.type)){
+            continue; 
+        }else{
+            set.insert(completion.type);
+        }
+
         Json item{
             {"label", OwO::QStringToUtf8(completion.text)},
+            {"detail", OwO::QStringToUtf8(completion.detail)},
             {"kind", completion.type}
         };
         res.push_back(item);
     }
-    
     return res;
 }
 
 int64_t QmlCompletion::previousPosWithoutIdentifier(int64_t pos)
 {
-    QTextDocument* doc = m_semanticInfo.doc.data();
+    // QTextDocument* doc = m_semanticInfo.doc.data();
+    QTextDocument* doc = m_currDoc.data();
 
     while (Private::IsIdentifierChar(doc->characterAt(pos - 1), false, false))
         --pos;
@@ -312,7 +409,8 @@ int64_t QmlCompletion::previousPosWithoutIdentifier(int64_t pos)
 
 const QmlJS::ObjectValue *QmlCompletion::findQmlScopeType(const QmlJS::CompletionContextFinder & contextFinder, int64_t pos)
 {
-    QTextDocument* doc = m_semanticInfo.doc.data();
+    // QTextDocument* doc = m_semanticInfo.doc.data();
+    QTextDocument* doc = m_currDoc.data();
     Document::Ptr document = m_semanticInfo.document;
     const ContextPtr &context = m_semanticInfo.context;
     const QList<AST::Node *> path = m_semanticInfo.rangePath(pos);
@@ -369,7 +467,8 @@ const QmlJS::ObjectValue *QmlCompletion::findQmlScopeType(const QmlJS::Completio
 
 QmlCompletion::CompletionItems_t QmlCompletion::completeStringLiteral(const QmlJS::CompletionContextFinder & finder, const ObjectValue *qmlScopeType)
 {
-    QTextDocument* doc = m_semanticInfo.doc.data();
+    // QTextDocument* doc = m_semanticInfo.doc.data();
+    QTextDocument* doc = m_currDoc.data();
     Document::Ptr document = m_semanticInfo.document;
     const ContextPtr &context = m_semanticInfo.context;
 
@@ -413,7 +512,8 @@ QmlCompletion::CompletionItems_t QmlCompletion::completeStringLiteral(const QmlJ
  // currently path-in-stringliteral is the only completion available in imports
 QmlCompletion::CompletionItems_t QmlCompletion::completeImport(const QmlJS::CompletionContextFinder & finder)
 {
-    QTextDocument* doc = m_semanticInfo.doc.data();
+    // QTextDocument* doc = m_semanticInfo.doc.data();
+    QTextDocument* doc = m_currDoc.data();
     Document::Ptr document = m_semanticInfo.document;
     const ContextPtr &context = m_semanticInfo.context;
 
@@ -452,7 +552,7 @@ QmlCompletion::CompletionItems_t QmlCompletion::completeImport(const QmlJS::Comp
             for(auto & text : completions){
                 COMPLETION_ITEM_S item;
                 item.text = text;
-                item.type = COMPLETION_TYPE_E::TYPE_KEYWORD;
+                item.type = COMPLETION_TYPE_E::TYPE_MODULE;
                 items.push_back(item);
             }
             return items;
@@ -463,7 +563,8 @@ QmlCompletion::CompletionItems_t QmlCompletion::completeImport(const QmlJS::Comp
 
 QmlCompletion::CompletionItems_t QmlCompletion::completeOperator(const QmlJS::CompletionContextFinder &finder, const ObjectValue *qmlScopeType, int64_t pos, QChar completionOperator)
 {
-    QTextDocument* doc = m_semanticInfo.doc.data();
+    // QTextDocument* doc = m_semanticInfo.doc.data();
+    QTextDocument* doc = m_currDoc.data();
     Document::Ptr document = m_semanticInfo.document;
     const ContextPtr &context = m_semanticInfo.context;
 
@@ -527,7 +628,7 @@ QmlCompletion::CompletionItems_t QmlCompletion::completeGlobal(const QmlJS::Comp
     bool doJsKeywordCompletion = true;
     bool doQmlTypeCompletion = false;
 
-    QTextDocument* doc = m_semanticInfo.doc.data();
+    // QTextDocument* doc = m_semanticInfo.doc.data();
     Document::Ptr document = m_semanticInfo.document;
     const ContextPtr &context = m_semanticInfo.context;
 
@@ -597,7 +698,7 @@ QmlCompletion::CompletionItems_t QmlCompletion::completeGlobal(const QmlJS::Comp
     if (doQmlTypeCompletion) {
         if (const ObjectValue *qmlTypes = scopeChain.qmlTypes()) {
             Private::ProcessProperties processProperties(&scopeChain);
-            Private::CompletionAdder completionAdder(&completions, COMPLETION_TYPE_E::TYPE_TYPEPARAMETER);
+            Private::CompletionAdder completionAdder(&completions, COMPLETION_TYPE_E::TYPE_FIELD);
             processProperties(qmlTypes, &completionAdder);
         }
     }
@@ -698,8 +799,9 @@ QmlCompletion::CompletionItems_t QmlCompletion::completeUrl(const QString &relat
 
 void QmlCompletion::setPosition(const POSITION_S &pos)
 {
+    ASSERT_RETURN(m_currDoc != nullptr, "m_currDoc == nullptr");
     ASSERT_RETURN(m_semanticInfo.isValid() == true, "m_semanticInfo isn't valid.");
-    auto content = m_semanticInfo.doc->toPlainText();
+    auto content = m_currDoc->toPlainText();
     m_docPos = QmlLanguageModel::convertPosition( content, pos);
 }
 
@@ -710,13 +812,16 @@ void QmlCompletion::setCheckPoint(std::function<bool()> &&fcn)
 
 Json QmlCompletion::complete()
 {
+    ASSERT_RETURN(m_currDoc != nullptr, "m_currDoc == nullptr", Json());
     ASSERT_RETURN(m_semanticInfo.isValid() == true, "m_semanticInfo isn't valid.", Json());
 
     // 标识符的起始位置
     int64_t startPos = previousPosWithoutIdentifier(m_docPos);
     bool bOnIdentifier = (m_docPos == startPos);
 
-    QTextCursor startPositionCursor(m_semanticInfo.doc.data());
+    auto currdoc  = m_currDoc;
+
+    QTextCursor startPositionCursor(currdoc.data());
     startPositionCursor.setPosition(startPos);
     CompletionContextFinder contextFinder(startPositionCursor);
 
@@ -726,8 +831,7 @@ Json QmlCompletion::complete()
     // a +<complete> -> '+'
     // a +b<complete> -> '+'
     QChar completionOperator = 
-            (startPos > 0) ? m_semanticInfo.doc->characterAt(startPos - 1) : QChar();
-
+            (startPos > 0) ? currdoc->characterAt(startPos - 1) : QChar();
     bool bIsQml = m_semanticInfo.document->language() == Dialect::Qml;
 
     const ObjectValue *qmlScopeType = nullptr;
