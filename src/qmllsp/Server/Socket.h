@@ -20,7 +20,7 @@
 #pragma comment(lib, "ws2_32.lib")
 #endif
 
-#include "common/lspLog.hpp"
+#include "common/lspLog.h"
 
 namespace tcp
 {

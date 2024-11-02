@@ -21,7 +21,7 @@
 #include "utils/mimeconstants.h"
 
 #include "common/utils.h"
-#include "common/lspLog.hpp"
+#include "common/lspLog.h"
 #include "common/lspProject.h"
 #include "common/jsonUtil.hpp"
 #include "common/jsonSerializer.hpp"

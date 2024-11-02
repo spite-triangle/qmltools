@@ -8,7 +8,7 @@
 
 #include "previewTool.h"
 #include "common/utils.h"
-#include "common/previewLog.hpp"
+#include "common/previewLog.h"
 #include "common/previewProject.h"
 #include "debugClient/previewConnectManager.h"
 

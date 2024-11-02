@@ -18,7 +18,7 @@
 #include <qmljs/qmljsmodelmanagerinterface.h>
 #include <qmljs/qmljscompletioncontextfinder.h>
 
-#include "common/lspLog.hpp"
+#include "common/lspLog.h"
 #include "common/lspProject.h"
 #include "qmlexpressionundercursor.h"
 #include "qmlModel/qmlLanguageModel.h"

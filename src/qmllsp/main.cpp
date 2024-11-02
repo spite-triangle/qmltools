@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <chrono>
 
 #include <QDir>
 #include <QTextStream>
@@ -14,7 +15,7 @@
 #include <QCoreApplication>
 
 #include "common/utils.h"
-#include "common/lspLog.hpp"
+#include "common/lspLog.h"
 #include "common/lspProject.h"
 #include "server/lspServer.h"
 #include "handler/registerTask.h"
@@ -26,13 +27,17 @@ int main(int argc, char *argv[])
     QCoreApplication app(argc, argv);
 
     auto project = ProjectExplorer::Project::Instance();
+    
 
     // 解析参数
     int code = project->parserCommand(argc, argv);
     if(code != 0) return code;
 
     // 初始化日志
+    auto begin =  std::chrono::steady_clock::now();
     OwO::Logger::Instance()->init( OwO::ToStdString(QDir(QCoreApplication::applicationDirPath() + "/log/qmllsp.log").absolutePath()), project->getExportLog());
+    auto end =  std::chrono::steady_clock::now();
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << std::endl;
 
     auto server = LspServer::createServer();
     RegisterTaskToServer(server);

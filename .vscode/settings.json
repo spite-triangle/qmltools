@@ -107,7 +107,8 @@
         "qobject": "cpp",
         "qversionnumber": "cpp",
         "qtextcursor": "cpp",
-        "qregularexpressionmatch": "cpp"
+        "qregularexpressionmatch": "cpp",
+        "complex": "cpp"
     },
     "qt.installPath": "D:/ProgramData/Qt6"
 }

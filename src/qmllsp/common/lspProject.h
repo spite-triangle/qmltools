@@ -55,7 +55,7 @@ public:
 
 public:
     Project(QObject * p = nullptr) : QObject(p){
-        m_setting.strVersion = "qmllsp version 1.0.1";
+        m_setting.strVersion = "qmllsp version 1.1.0";
     }
 
     MUT_FUNC_SET_GET(m_muteSetting, PROJECT_SETTING_S, m_setting, Settings);
@@ -108,4 +108,4 @@ private:
 
 
 
-#endif // LSPPROJECT_H
+#endif /* LSPPROJECT_H */

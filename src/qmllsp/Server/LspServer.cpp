@@ -10,7 +10,7 @@
 #include <string>
 #include <stdexcept>
 
-#include "common/lspLog.hpp"
+#include "common/lspLog.h"
 #include "common/lspProject.h"
 #include "common/lspException.hpp"
 #include "common/jsonUtil.hpp"
@@ -37,6 +37,7 @@ bool LspServer::distributeTask(const JsonPtr & req)
 
     auto & json = *req;
     QString method = OwO::Utf8ToQString(json["method"].get<std::string>());
+    sendLog(fmt::format("start to handle request: {}", OwO::QStringToUtf8(method)));
 
     // 区分 message 
     if(json.contains("id") == true){
@@ -84,6 +85,7 @@ bool LspServer::handlerPostCallback(const QString &id, bool bRes)
         msg.id = id;
 
         m_queueResps.waitPush(msg);
+        sendLog(fmt::format("end request: {}", OwO::QStringToUtf8(task->getMethod())));
     }
     return bRes;
 }
@@ -97,15 +99,29 @@ bool LspServer::start()
     ASSERT_RETURN(tcp::InitSocketNet() == true, "Failed to init net.", false);
 
     m_serverSocket = tcp::InitServer("127.0.0.1", project->getPort());
-    ASSERT_RETURN(m_serverSocket != -1, "Failed to init server socket.", false);
+    ASSERT_RETURN(m_serverSocket != -1, sendLog("Failed to init server socket."), false);
 
     // 等客户端 5 分钟
     m_connectSocket = tcp::AcceptClientTimeOut(m_serverSocket, 300000);
-    ASSERT_RETURN(m_connectSocket.fd != -1, "Failed to connect client.", false);
-
+    ASSERT_RETURN(m_connectSocket.fd != -1, sendLog("Failed to connect client."), false);
 
     m_resResv = QtConcurrent::run(&LspServer::runSocketResvRequest, this);
     m_resSend = QtConcurrent::run(&LspServer::runSocketSendResponse, this);
+
+    sendLog("Accept client successfully.");
+    sendLog(R"(
+
+        ████████▄       ███          ████████▄      ▄▄▄▄███▄▄▄▄    ▄█       
+        ███    ███  ▀█████████▄      ███    ███   ▄██▀▀▀███▀▀▀██▄ ███       
+        ███    ███     ▀███▀▀██      ███    ███   ███   ███   ███ ███       
+        ███    ███      ███   ▀      ███    ███   ███   ███   ███ ███       
+        ███    ███      ███          ███    ███   ███   ███   ███ ███       
+        ███    ███      ███          ███    ███   ███   ███   ███ ███       
+        ███  ▀ ███      ███          ███  ▀ ███   ███   ███   ███ ███▌    ▄ 
+        ▀██████▀▄█    ▄████▀         ▀██████▀▄█   ▀█   ███   █▀  █████▄▄██ 
+                                                                ▀         
+                                                        @author: triangle
+)");
     return true;
 }
 
@@ -119,6 +135,34 @@ bool LspServer::close()
 void LspServer::registoryTaskFactory(const QString &strMethod, const TaskFactory::Ptr &factory)
 {
     m_mapTaskFactory[strMethod] = factory;
+}
+
+std::string LspServer::sendLog(const std::string &strMsg, LOG_MESSAGE_E enType)
+{
+
+    /* 
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "textDocument/completion",
+                "params": {
+                    ...
+                }
+            }
+    
+     */
+    auto message = Json {
+        {"jsonrpc", "2.0"},
+        {"method", "window/logMessage"},
+        {"params", {
+            {"type", enType},
+            {"message", strMsg}
+        }},
+    };
+
+    sendMsg(std::make_shared<Json>(std::move(message)));    
+
+    return strMsg;
 }
 
 void LspServer::sendMsg(const JsonPtr &msgBody)
@@ -152,12 +196,14 @@ try
          */
         JsonPtr req  = std::make_shared<Json>(Json::parse(stMsg.content, nullptr, false));
         if(req == nullptr || req->is_null()){
-             throw ParseRequestException("Failed to load json.");
+            sendLog(fmt::format("Fail to parse message : {}", stMsg.content));
+            throw ParseRequestException("Failed to load json.");
         }
 
         // 根据方法创建任务，并存入 m_maptasks
         if(distributeTask(req) == false){
-             throw LspException("Failed to distribute task.");
+            sendLog(fmt::format("Fail to handle message : {}", stMsg.content), LOG_MESSAGE_E::MSG_ERROR);
+            throw LspException("Failed to distribute task.");
         }
 
         // 重置
@@ -165,8 +211,9 @@ try
     }
 }
 catch (const std::exception & error){
-    LOG_ERROR("%s",error.what());
+    LOG_ERROR("{}",error.what());
 
+    sendLog( fmt::format("qmllsp throw exception: {}", error.what()), LOG_MESSAGE_E::MSG_ERROR);
     auto msg = std::make_shared<Json>(R"({"jsonrpc":"2.0","method":"exit"})");
     sendMsg(msg);
 
@@ -209,7 +256,7 @@ std::string LspServer::genarateSendMessage(const JsonPtr &json)
 bool LspServer::recv(LSP_MESSAGE_S &stMsg)
 {
     // 解析头
-    ASSERT_RETURN(recvHead(stMsg) == true, "Failed to recv head information.", false);
+    ASSERT_RETURN(recvHead(stMsg) == true, fmt::format("Failed to recv head information. {}", stMsg.content), false);
 
     // 获取内容
     char * buff = new char[stMsg.nLen + 1]();

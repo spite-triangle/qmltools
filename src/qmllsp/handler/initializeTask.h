@@ -14,4 +14,4 @@ protected:
     virtual bool handleNotification(const Json & req) override;
 };
 
-#endif // INITIALIZETASK_H
+#endif /* INITIALIZETASK_H */

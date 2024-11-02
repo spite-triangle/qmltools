@@ -13,7 +13,7 @@
 #include "utils/qrcparser.h"
 
 #include "common/utils.h"
-#include "common/previewLog.hpp"
+#include "common/previewLog.h"
 #include "common/previewProject.h"
 
 using namespace Utils;
@@ -110,7 +110,7 @@ void FileSystemManger::updateFocusQml()
             project->setFocusQrcQml(QUrl::fromLocalFile(qrcUrl));
         }
 
-        LOG_DEBUG("focus qml file %s", OwO::QStringToUtf8(qrcUrl).c_str());
+        LOG_DEBUG("focus qml file {}", OwO::QStringToUtf8(qrcUrl).c_str());
     }
 
     // 添加监控
@@ -131,14 +131,14 @@ bool FileSystemManger::onPathRequested(const QString & request) {
     // 转换网络路径例如 %5c 转为 /
     QString strPath = QUrl::fromPercentEncoding(request.toUtf8());
 
-    LOG_DEBUG("request path %s", OwO::QStringToUtf8(strPath).c_str());
+    LOG_DEBUG("request path {}", OwO::QStringToUtf8(strPath).c_str());
     auto project = Project::Instance();
     bool bOk = false;
 
     auto fileHandler = [&](const Utils::FilePath &filePath, int confidence){
         if(confidence != strPath.length()){
             emit sigAnnounceError(strPath);
-            LOG_DEBUG("failed to import %s", OwO::QStringToUtf8(strPath).c_str());
+            LOG_DEBUG("failed to import {}", OwO::QStringToUtf8(strPath).c_str());
             return;
         }
 
@@ -147,7 +147,7 @@ bool FileSystemManger::onPathRequested(const QString & request) {
         QByteArray contents = loadFile(filePath.toFSPathString(), bFlag);
         if(bFlag == false){
             emit sigAnnounceError(strPath);
-            LOG_DEBUG("failed to load file : %s", strPath.toStdString().c_str());
+            LOG_DEBUG("failed to load file : {}", strPath.toStdString().c_str());
             return;
         }
 
@@ -158,17 +158,17 @@ bool FileSystemManger::onPathRequested(const QString & request) {
 
         emit sigAnnounceFile(strPath, contents);
         bOk = true;
-        LOG_DEBUG("Successfully import %s", OwO::QStringToUtf8(strPath).c_str());
+        LOG_DEBUG("Successfully import {}", OwO::QStringToUtf8(strPath).c_str());
     };
 
     auto directoryHandler = [&](const QStringList &entries, int confidence){
         if(confidence != strPath.length()){
             emit sigAnnounceError(strPath);
-            LOG_DEBUG("failed to import %s", OwO::QStringToUtf8(strPath).c_str());
+            LOG_DEBUG("failed to import {}", OwO::QStringToUtf8(strPath).c_str());
         }else{
             emit sigAnnounceDirectory(strPath, entries);
             bOk = true;
-            LOG_DEBUG("Successfully import %s", OwO::QStringToUtf8(strPath).c_str());
+            LOG_DEBUG("Successfully import {}", OwO::QStringToUtf8(strPath).c_str());
         }
     };
 
@@ -243,12 +243,12 @@ void FileSystemManger::onFileChanged(const QString &strPath)
     }else{
         m_mapFileModifyTime[strPath] = QFileInfo(strPath).fileTime(QFile::FileModificationTime);
     }
-    LOG_DEBUG("file change : %s", OwO::QStringToUtf8(strPath).c_str());
+    LOG_DEBUG("file change : {}", OwO::QStringToUtf8(strPath).c_str());
 
     bool bFlag = false;
     QByteArray contents = loadFile(strPath, bFlag);
     if(bFlag == false){
-        LOG_ERROR("failed to load file : %s", strPath.toStdString().c_str());
+        LOG_ERROR("failed to load file : {}", strPath.toStdString().c_str());
         m_watcher.removeFile(strPath);
         m_mapFileModifyTime.remove(strPath);
         return;

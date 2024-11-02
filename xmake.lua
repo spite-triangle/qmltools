@@ -1,8 +1,10 @@
 add_rules("mode.debug", "mode.release")
 
 
-add_cxflags("/utf-8")
+add_cxflags("/utf-8","/Zi", "/FS")
 add_ldflags("/SUBSYSTEM:CONSOLE")
+
+add_ldflags("/debug")
 
 add_defines("QT_CREATOR")
 
@@ -29,7 +31,7 @@ end
 target("qmlpreview")
     -- add_defines("DOCT_TEST")
     add_rules("qt.console")
-    add_frameworks("QtNetwork")
+    add_frameworks("QtNetwork") 
 
     -- 头
     add_includedirs("src/preview/",

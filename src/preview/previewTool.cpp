@@ -7,7 +7,7 @@
 #include <iostream>
 
 #include "common/utils.h"
-#include "common/previewLog.hpp"
+#include "common/previewLog.h"
 #include "common/previewProject.h"
 
 bool PreviewTool::m_bQuit = false;

@@ -181,7 +181,7 @@ SOCKET_INFO_S AcceptClient(socket_t fd)
     client.fd = accept(fd, (struct sockaddr*)&client.addr, &addrLen);
 
     char ip[32];
-    LOG_ERROR("客户端fd: %d, IP：%s, 端口:%d\n",
+    LOG_ERROR("客户端fd: {}, IP：{}, 端口: {}\n",
         client.fd,
         inet_ntop(AF_INET, &client.addr.sin_addr.S_un, ip, sizeof(ip)),
         ntohs(client.addr.sin_port)

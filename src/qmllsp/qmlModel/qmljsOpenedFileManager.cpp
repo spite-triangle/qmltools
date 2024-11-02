@@ -4,7 +4,7 @@
 #include <QByteArray>
 
 #include "utils/filepath.h"
-#include "common/lspLog.hpp"
+#include "common/lspLog.h"
 
 
 namespace Private

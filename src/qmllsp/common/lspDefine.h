@@ -130,5 +130,13 @@ enum LSP_ERROR_E: int{
 
 };
 
+/* 输出到客户端的日志 */
+enum LOG_MESSAGE_E : int{
+	MSG_ERROR = 1,
+	MSG_WARNING = 2,
+	MSG_INFO = 3,
+	MSG_LOG = 4,
+	MSG_DEBUG = 5,
+};
 
 #endif // LSPDEFINE_H

@@ -44,6 +44,8 @@ public:
     /* 注册处理器 */
     void registoryTaskFactory(const QString & strMethod, const TaskFactory::Ptr & factory);
 
+    /* 发送日志到客户端 */ 
+    std::string sendLog(const std::string & strMsg ,LOG_MESSAGE_E enType = LOG_MESSAGE_E::MSG_DEBUG);
 
     /* 发送信息 */
     void sendMsg(const JsonPtr & msgBody);
@@ -90,4 +92,4 @@ private:
 };
 
 
-#endif // LSPSERVER_H
+#endif /* LSPSERVER_H */

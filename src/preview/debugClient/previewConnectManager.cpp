@@ -9,7 +9,7 @@
 #include <QRegularExpressionMatch>
 
 #include "common/utils.h"
-#include "common/previewLog.hpp"
+#include "common/previewLog.h"
 #include "common/previewProject.h"
 #include "previewConnectManager.h"
 

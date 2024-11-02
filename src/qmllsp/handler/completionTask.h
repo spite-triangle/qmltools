@@ -16,4 +16,4 @@ protected:
 
 };
 
-#endif // COMPLETIONTASK_H
+#endif /* COMPLETIONTASK_H */

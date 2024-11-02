@@ -9,7 +9,7 @@
 #include <unordered_map>
 
 #include "common/utils.h"
-#include "common/previewLog.hpp"
+#include "common/previewLog.h"
 
 namespace OwO
 {   

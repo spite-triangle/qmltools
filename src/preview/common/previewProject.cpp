@@ -5,7 +5,7 @@
 
 #include "common/utils.h"
 #include "common/CLI11.hpp"
-#include "common/previewLog.hpp"
+#include "common/previewLog.h"
 
 void ProjectExplorer::Project::appendQrcFile(const QString &strPath)
 {
