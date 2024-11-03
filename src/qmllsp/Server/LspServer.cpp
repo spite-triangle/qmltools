@@ -257,10 +257,19 @@ bool LspServer::recv(LSP_MESSAGE_S &stMsg)
 {
     // 解析头
     ASSERT_RETURN(recvHead(stMsg) == true, fmt::format("Failed to recv head information. {}", stMsg.content), false);
+    if(stMsg.nLen <= 0) return true;
 
     // 获取内容
     char * buff = new char[stMsg.nLen + 1]();
-    ASSERT_RETURN(tcp::RecvMsg(m_connectSocket.fd, buff, stMsg.nLen) == true, "Failed to recv content.", false)
+
+    bool bFlag = false;
+    for (size_t i = 0; i < 3; i++)
+    {
+        bFlag = tcp::RecvMsg(m_connectSocket.fd, buff, stMsg.nLen, 60000);
+        if(bFlag == true)break;
+        Sleep(10000);
+    }
+    ASSERT_RETURN(bFlag, "Failed to recv content.", false)
 
     stMsg.content = OwO::QStringToUtf8(buff);
     return true;
@@ -272,9 +281,16 @@ bool LspServer::recvHead(LSP_MESSAGE_S &stMsg)
 
     // 查找 header 与 content 的分界线
     std::string strHead;
-    if(tcp::RecvMsg(m_connectSocket.fd, Internal::g_boundaryLine, strHead) == false){
-        return false;
+
+    bool bFlag = false;
+    for (size_t i = 0; i < 3; i++)
+    {
+        bFlag = tcp::RecvMsg(m_connectSocket.fd, Internal::g_boundaryLine, strHead, 60000);
+        if(bFlag == true)break;
+        Sleep(10000);
     }
+    if(bFlag == false) return false;
+    
 
     // 解析头
     QStringList lstHead =  OwO::Utf8ToQString(strHead).split(Internal::g_lineEnd);
@@ -310,9 +326,16 @@ bool LspServer::send(const std::string  &data)
     {
         size_t diff = total - sendLen;
         len =  diff < len ?  diff : len;
-        
-        int res = tcp::SendMsg(m_connectSocket.fd, data.c_str() + sendLen, len);
-        if(res < 0 ) return false;
+
+        int res = 0; 
+        for (size_t i = 0; i < 3; i++)
+        {
+            res = tcp::SendMsg(m_connectSocket.fd, data.c_str() + sendLen, len, 60000);
+            if(res > 0 ) break;
+            Sleep(10000);
+        }
+        if(res <= 0) return false;
+
 
         sendLen += res;
     }

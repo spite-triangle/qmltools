@@ -74,7 +74,7 @@ bool CompletionTask::handleMessage(const Json &req, Json &resp)
 
         POSITION_S pos = req["params"]["position"];
 
-        auto doc = QmlJS::QTextDocumentPtr(new QTextDocument(model->fileContent(path)));
+        auto doc = QmlJS::QTextDocumentPtr(new QTextDocument(model->fileContent(path) + "\n\n"));
 
         QmlCompletion tool;
         tool.setCurrentDocument(doc);

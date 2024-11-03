@@ -820,6 +820,7 @@ Json QmlCompletion::complete()
     bool bOnIdentifier = (m_docPos == startPos);
 
     auto currdoc  = m_currDoc;
+    QString strText = m_currDoc->toPlainText();
 
     QTextCursor startPositionCursor(currdoc.data());
     startPositionCursor.setPosition(startPos);
@@ -839,6 +840,8 @@ Json QmlCompletion::complete()
         qmlScopeType = findQmlScopeType(contextFinder, startPos);
         ASSERT_RETURN(qmlScopeType != nullptr, "qmlScopeType != nullptr", Json()); 
     }
+
+
 
     CompletionItems_t completions;
     if(contextFinder.isInStringLiteral()){

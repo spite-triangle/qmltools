@@ -59,15 +59,70 @@ int CloseSocket(socket_t fd)
 }
 
 // 发送消息
-int SendMsg(int fd, const char* buf, int len) {
+int SendMsg(int fd, const char* buf, int len, int timeOut) {
+    // 等待可读
+    fd_set fdwirte;
+    FD_ZERO(&fdwirte);
+    FD_SET(fd, &fdwirte);
+
+    int ret = 0;
+    struct timeval val;
+    val.tv_sec = timeOut;
+    val.tv_usec = 0;
+    while (1)
+    {
+        ret = select(fd+1, NULL, &fdwirte, NULL, &val); //设置超时
+        if (ret == 0)  
+        {
+            if(errno == EINTR){
+                continue; //信号中断再超时一次
+
+            }else{
+                return false; // 超时
+            }
+        }else if(ret == SOCKET_ERROR){
+            return false;
+        }
+
+        break;
+    }
+
 	return send(fd, buf, len, 0);
 }
 
 // 接收消息
-bool RecvMsg(int fd, char* buf, int totalLen) {
+bool RecvMsg(int fd, char* buf, int totalLen, int timeOut) {
+
+    // 等待可读
+    fd_set fdread;
+    FD_ZERO(&fdread);
+    FD_SET(fd, &fdread);
+
+    int ret = 0;
+    struct timeval val;
+    val.tv_sec = timeOut;
+    val.tv_usec = 0;
+    while (1)
+    {
+        ret = select(fd+1, &fdread, NULL, NULL, &val); //设置超时
+        if (ret == 0)  
+        {
+            if(errno == EINTR){
+                continue; //信号中断再超时一次
+
+            }else{
+                return false; // 超时
+            }
+        }else if(ret == SOCKET_ERROR){
+            return false;
+        }
+
+        break;
+    }
+
+    // 接受消息
     int recvLen = 0;
     const int readMax = 1024; 
-
     while (recvLen < totalLen)
     {
         int buffLen = (totalLen - recvLen) > readMax ? readMax : totalLen - recvLen;
@@ -89,9 +144,37 @@ bool RecvMsg(int fd, char* buf, int totalLen) {
     return true;
 }
 
-bool RecvMsg(int fd, const std::string &strEnd, std::string &out)
+bool RecvMsg(int fd, const std::string &strEnd, std::string &out, int timeOut)
 {
+    // 等待可读
+    fd_set fdread;
+    FD_ZERO(&fdread);
+    FD_SET(fd, &fdread);
 
+    int ret = 0;
+    struct timeval val;
+    val.tv_sec = timeOut;
+    val.tv_usec = 0;
+    while (1)
+    {
+        ret = select(fd+1, &fdread, NULL, NULL, &val); //设置超时
+        if (ret == 0)  
+        {
+            if(errno == EINTR){
+                continue; //信号中断再超时一次
+
+            }else{
+                return false; // 超时
+            }
+        }else if(ret == SOCKET_ERROR){
+            return false;
+        }
+
+        break;
+    }
+
+
+    // 读取
     while (true)
     {
         char ch;

@@ -49,12 +49,12 @@ SOCKET_INFO_S AcceptClient(socket_t fd);
 
 int ConnectServer(socket_t fd, const char * ip, uint32_t port);
 
-int SendMsg(int fd, const char* buf, int len);
+int SendMsg(int fd, const char* buf, int len, int timeOut);
 
-bool RecvMsg(int fd, char* buf, int bufSize);
+bool RecvMsg(int fd, char* buf, int bufSize, int timeOut);
 
 // 接收数据，直到 strEnd 退出
-bool RecvMsg(int fd, const std::string & strEnd, std::string & out);
+bool RecvMsg(int fd, const std::string & strEnd, std::string & out, int timeOut);
 
 } // namespace TCP
 
