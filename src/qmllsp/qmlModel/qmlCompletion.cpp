@@ -820,7 +820,6 @@ Json QmlCompletion::complete()
     bool bOnIdentifier = (m_docPos == startPos);
 
     auto currdoc  = m_currDoc;
-    QString strText = m_currDoc->toPlainText();
 
     QTextCursor startPositionCursor(currdoc.data());
     startPositionCursor.setPosition(startPos);

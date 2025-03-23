@@ -5,7 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/src/**",
                 "${workspaceFolder}/include/qtcreator/**",
-                "D:\\ProgramData\\Qt6\\6.7.0\\msvc2019_64\\include\\**"
+                "D:\\Program\\qt\\6.7.3\\msvc2019_64\\include\\**"
             ],
             "defines": [
                 "_DEBUG",
@@ -14,9 +14,10 @@
                 "QT_CREATOR",
                 "PROTOBUF_CONSTEXPR"
             ],
+            "compilerPath": "d:/Program Files/LLVM//bin/clang.exe",
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "gcc-x64"
+            "intelliSenseMode": "windows-clang-x64"
         }
     ],
     "version": 4

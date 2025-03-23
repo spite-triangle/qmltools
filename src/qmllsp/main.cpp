@@ -39,17 +39,28 @@ int main(int argc, char *argv[])
     auto end =  std::chrono::steady_clock::now();
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << std::endl;
 
-    auto server = LspServer::createServer();
-    RegisterTaskToServer(server);
-    server->start();
-
     Utils::setMimeStartupPhase(Utils::MimeStartupPhase::PluginsLoading);
     Utils::setMimeStartupPhase(Utils::MimeStartupPhase::PluginsInitializing);
     Utils::setMimeStartupPhase(Utils::MimeStartupPhase::PluginsDelayedInitializing);
     Utils::setMimeStartupPhase(Utils::MimeStartupPhase::UpAndRunning);
 
-    // 创建语言模型
-    auto model = QmlLanguageModel::Instance();
-    QObject::connect(model.get(), &QmlLanguageModel::sigDiagnosticMessageUpdated, server.get(), &LspServer::onDiagnosticMessageUpdated); 
-    return app.exec();
+    try
+    {
+        auto server = LspServer::createServer();
+        RegisterTaskToServer(server);
+        server->start();
+    
+        
+        // 创建语言模型
+        auto model = QmlLanguageModel::Instance();
+        QObject::connect(model.get(), &QmlLanguageModel::sigDiagnosticMessageUpdated, server.get(), &LspServer::onDiagnosticMessageUpdated); 
+        app.exec();
+    }
+    catch(const std::exception& e)
+    {
+        LOG_ERROR("{}",e.what());
+        return -1;
+    }
+
+    return 0;
 }

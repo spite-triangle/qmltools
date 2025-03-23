@@ -109,19 +109,6 @@ bool LspServer::start()
     m_resSend = QtConcurrent::run(&LspServer::runSocketSendResponse, this);
 
     sendLog("Accept client successfully.");
-    sendLog(R"(
-
-        ████████▄       ███          ████████▄      ▄▄▄▄███▄▄▄▄    ▄█       
-        ███    ███  ▀█████████▄      ███    ███   ▄██▀▀▀███▀▀▀██▄ ███       
-        ███    ███     ▀███▀▀██      ███    ███   ███   ███   ███ ███       
-        ███    ███      ███   ▀      ███    ███   ███   ███   ███ ███       
-        ███    ███      ███          ███    ███   ███   ███   ███ ███       
-        ███    ███      ███          ███    ███   ███   ███   ███ ███       
-        ███  ▀ ███      ███          ███  ▀ ███   ███   ███   ███ ███▌    ▄ 
-        ▀██████▀▄█    ▄████▀         ▀██████▀▄█   ▀█   ███   █▀  █████▄▄██ 
-                                                                ▀         
-                                                        @author: triangle
-)");
     return true;
 }
 
@@ -177,11 +164,13 @@ void LspServer::runSocketResvRequest()
 try
 {
     LSP_MESSAGE_S stMsg;
+    
     while (true)
     {
         // 接收信息，只有 content 有内容才做处理
         if(recv(stMsg) == false){
-            throw ParseRequestException("Failed to recv.");
+            Sleep(10000);
+            continue;
         }
 
         /* 
@@ -287,7 +276,6 @@ bool LspServer::recvHead(LSP_MESSAGE_S &stMsg)
     {
         bFlag = tcp::RecvMsg(m_connectSocket.fd, Internal::g_boundaryLine, strHead, 60000);
         if(bFlag == true)break;
-        Sleep(10000);
     }
     if(bFlag == false) return false;
     

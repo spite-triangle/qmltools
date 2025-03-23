@@ -279,6 +279,7 @@ void QmlLanguageModel::waitModelManagerUpdate()
     mm->test_joinAllThreads();
 }
 
+
 bool QmlLanguageModel::isValid()
 {
     return m_bValid;
@@ -301,7 +302,7 @@ void QmlLanguageModel::onDocumentUpdated(QmlJS::Document::Ptr doc) {
     }
 
     // 语法正确，需要更新 m_currSemantic
-    if (doc->ast()) {
+    if (doc->ast() || m_currSemantic.isValid() == false) {
         auto mm = ModelManagerInterface::instance();
 
         bool bRes = false;

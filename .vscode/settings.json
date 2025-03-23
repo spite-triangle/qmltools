@@ -1,17 +1,6 @@
 {
-    "qt.sdkPath": "D:\\ProgramData\\Qt6\\6.7.0\\msvc2019_64",
-    "qt.qtnatvis": "E:/workspace/qml/QtCreator/.vscode/qt6.natvis.xml",
+    "qt.sdkPath": "D:\\Program\\qt\\6.7.3\\msvc2019_64",
     "editor.copyWithSyntaxHighlighting": false,
-    "testMate.cpp.test.executables": "E:/workspace/qt servitor/tools/bin/preview/preview.exe",
-    "testMate.cpp.test.advancedExecutables": [
-        {
-            "pattern":"E:/workspace/qt servitor/tools/bin/preview/preview.exe",
-            "cwd":"${workspaceFolder}/bin/preview/",
-            "env": {
-                "PATH":"D:/ProgramData/Qt6/6.7.0/msvc2019_64/bin;E:/workspace/qml/qt-creator/build/bin/Debug;${os_env:PATH}$"
-            }
-        }
-    ],
     "files.associations": {
         "*.vue": "html",
         "*.m": "matlab",
@@ -108,7 +97,35 @@
         "qversionnumber": "cpp",
         "qtextcursor": "cpp",
         "qregularexpressionmatch": "cpp",
-        "complex": "cpp"
+        "complex": "cpp",
+        "filesystem": "cpp",
+        "xhash": "cpp",
+        "xstring": "cpp",
+        "xtree": "cpp",
+        "queue": "cpp",
+        "stack": "cpp",
+        "format": "cpp",
+        "xlocmes": "cpp",
+        "xlocmon": "cpp",
+        "xlocnum": "cpp",
+        "xloctime": "cpp",
+        "bit": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "coroutine": "cpp",
+        "expected": "cpp",
+        "resumable": "cpp",
+        "ios": "cpp",
+        "locale": "cpp",
+        "ranges": "cpp",
+        "span": "cpp",
+        "stdfloat": "cpp",
+        "stop_token": "cpp",
+        "xfacet": "cpp",
+        "xiosbase": "cpp",
+        "xlocale": "cpp",
+        "xlocbuf": "cpp",
+        "xlocinfo": "cpp",
+        "xtr1common": "cpp"
     },
-    "qt.installPath": "D:/ProgramData/Qt6"
 }

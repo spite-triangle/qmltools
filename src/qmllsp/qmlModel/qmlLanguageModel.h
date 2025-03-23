@@ -1,5 +1,5 @@
-#ifndef QMLMODEL_H
-#define QMLMODEL_H
+#ifndef QMLLANGUAGEMODEL_H
+#define QMLLANGUAGEMODEL_H
 
 #include <mutex>
 #include <atomic>
@@ -92,4 +92,4 @@ private:
     QmlJS::SemanticInfo m_currSemantic; // 当前正编辑文本的 SemanticInfo
 };
 
-#endif // QMLMODEL_H
+#endif /* QMLLANGUAGEMODEL_H */

@@ -62,7 +62,8 @@ target("qmllsp")
     add_files("src/qmllsp/*.cpp",
               "src/qmllsp/**/*.cpp",
               "src/qmllsp/**/*.h",
-              "src/common/*.cpp")
+              "src/common/*.cpp",
+              "src/qmllsp/qrc.qrc")
 
 
 

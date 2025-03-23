@@ -136,7 +136,7 @@ bool RecvMsg(int fd, char* buf, int totalLen, int timeOut) {
             return false;
         }
         else {
-            perror("recv");
+            err("recv");
             return false;
         }
 
@@ -180,11 +180,11 @@ bool RecvMsg(int fd, const std::string &strEnd, std::string &out, int timeOut)
         char ch;
         int len = recv(fd, &ch, 1, 0);
         if(len > 0){
-            out.push_back(ch);
+            out.push_back(ch); 
         }else if(len == 0){
             return false;
         }else{
-            LOG_ERROR("recv");
+            err("recv"); 
             return false;
         }
 
@@ -264,7 +264,7 @@ SOCKET_INFO_S AcceptClient(socket_t fd)
     client.fd = accept(fd, (struct sockaddr*)&client.addr, &addrLen);
 
     char ip[32];
-    LOG_ERROR("客户端fd: {}, IP：{}, 端口: {}\n",
+    LOG_DEBUG("客户端fd: {}, IP：{}, 端口: {}\n",
         client.fd,
         inet_ntop(AF_INET, &client.addr.sin_addr.S_un, ip, sizeof(ip)),
         ntohs(client.addr.sin_port)

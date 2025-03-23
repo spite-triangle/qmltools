@@ -8,7 +8,7 @@
             "name": "(Windows) Attach",
             "type": "cppvsdbg",
             "request": "attach",
-            "visualizerFile": "E:\\workspace\\qml\\QtCreator\\.vscode\\qt6.natvis.xml"
+            "visualizerFile": "c:\\Users\\GOD\\.vscode\\extensions\\triangleoxo.qtservitor-0.5.0\\assets\\natvis\\qt6.natvis.xml"
         },
         {
             "name": "(Windows) Launch qmllsp",
@@ -30,10 +30,14 @@
                 {
                     "name": "path",
                     "value": "D:\\ProgramData\\Qt6\\6.7.0\\msvc2019_64\\bin"
+                },
+                {
+                    "name": "path",
+                    "value": "D:\\Program\\qt\\6.7.3\\msvc2019_64\\bin"
                 }
             ],
             "console": "integratedTerminal",
-            "visualizerFile": "E:\\workspace\\qml\\QtCreator\\.vscode\\qt6.natvis.xml"
+            "visualizerFile": "c:\\Users\\GOD\\.vscode\\extensions\\triangleoxo.qtservitor-0.5.0\\assets\\natvis\\qt6.natvis.xml"
         },
         {
             "name": "(Windows) Launch",
@@ -47,10 +51,14 @@
                 {
                     "name": "path",
                     "value": "D:\\ProgramData\\Qt6\\6.7.0\\msvc2019_64\\bin;E:/workspace/qml/qt-creator/build/bin/Debug"
+                },
+                {
+                    "name": "path",
+                    "value": "D:\\Program\\qt\\6.7.3\\msvc2019_64\\bin"
                 }
             ],
             "console": "internalConsole",
-            "visualizerFile": "E:\\workspace\\qml\\QtCreator\\.vscode\\qt6.natvis.xml"
+            "visualizerFile": "c:\\Users\\GOD\\.vscode\\extensions\\triangleoxo.qtservitor-0.5.0\\assets\\natvis\\qt6.natvis.xml"
         },
         {
             "name": "(Windows) Preview debug",
@@ -70,10 +78,14 @@
                 {
                     "name": "path",
                     "value": "D:/ProgramData/Qt6/6.7.0/msvc2019_64/bin"
+                },
+                {
+                    "name": "path",
+                    "value": "D:\\Program\\qt\\6.7.3\\msvc2019_64\\bin"
                 }
             ],
             "console": "integratedTerminal",
-            "visualizerFile": "E:\\workspace\\qml\\QtCreator\\.vscode\\qt6.natvis.xml"
+            "visualizerFile": "c:\\Users\\GOD\\.vscode\\extensions\\triangleoxo.qtservitor-0.5.0\\assets\\natvis\\qt6.natvis.xml"
         },
         {
             "name": "(Windows) Preview release",
@@ -93,10 +105,14 @@
                 {
                     "name": "path",
                     "value": "D:/ProgramData/Qt6/6.7.0/msvc2019_64/bin"
+                },
+                {
+                    "name": "path",
+                    "value": "D:\\Program\\qt\\6.7.3\\msvc2019_64\\bin"
                 }
             ],
             "console": "integratedTerminal",
-            "visualizerFile": "E:\\workspace\\qml\\QtCreator\\.vscode\\qt6.natvis.xml"
+            "visualizerFile": "c:\\Users\\GOD\\.vscode\\extensions\\triangleoxo.qtservitor-0.5.0\\assets\\natvis\\qt6.natvis.xml"
         }
     ]
 }

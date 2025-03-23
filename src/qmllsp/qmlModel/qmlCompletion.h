@@ -92,4 +92,4 @@ private:
 };
 
 
-#endif // QMLCOMPLETION_H
+#endif /* QMLCOMPLETION_H */
